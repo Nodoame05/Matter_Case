@@ -1,7 +1,7 @@
 # Matter-Case
 
-Matter の CASE プロトコル（Certificate Authenticated Session Establishment）を Tamarin Prover で形式検証したモデルと結果。
-鍵の漏洩条件をすべての組み合わせについて調べ、各セキュリティ性質が破れる必要十分条件（安全境界）を求めた。
+Matter の CASE プロトコルを Tamarin Prover で形式検証したモデルと結果。
+鍵の漏洩条件をすべての組み合わせについて調べ、各セキュリティ性質が破れる安全境界を求めた。
 
 SCIS 2027 発表「Matter CASEプロトコルにおける鍵漏洩条件の網羅的検証と安全境界の特定」のための成果物である。
 
@@ -25,7 +25,7 @@ Matter-Case/
 │   ├── case_i_secrecy_sk_needs_ipk_and_Eph.spthy
 │   └── case_r_secrecy_sk_needs_ipk_and_Eph.spthy  
 ├── scripts/
-│   └── run.sh              models/case.spthy の全 lemma を実行（時計が正確 / LKGT）
+│   └── run.sh                models/case.spthy の全 lemma を実行（時計が正確 / LKGT）
 └── results/
     ├── case_out.txt                 models/case.spthy の結果
     ├── case_resumption_out.txt      models/case_resumption.spthy の結果
@@ -78,9 +78,9 @@ Matter-Case/
 
 ```sh
 cd scripts
-./run_case.sh ../models/case.spthy                # 時計が正確 → LKGT の順に全 lemma
-MODE=default ./run_case.sh ../models/case.spthy   # 時計が正確なモデルだけ
-MODE=lkgt    ./run_case.sh ../models/case.spthy   # LKGT の有効期限の lemma だけ
+./run.sh                 # 時計が正確 → LKGT の順に全 lemma
+MODE=default ./run.sh    # 時計が正確なモデルだけ
+MODE=lkgt    ./run.sh    # LKGT の有効期限の lemma だけ
 ```
 
 1 本ずつ実行する場合：
@@ -102,14 +102,18 @@ tamarin-prover --derivcheck-timeout=0 -D=LKGT -D=SEARCH_EXP --prove=attack_expir
 ### Resumption（`models/case_resumption.spthy`）
 
 ```sh
-tamarin-prover --prove models/case_resumption.spthy     # 全 11 lemma、約 11 秒
+tamarin-prover --prove models/case_resumption.spthy 
 ```
 
 ### 網羅（`boundary/`）
 
 ```sh
 cd boundary
-./run.sh case_i_secrecy_sk.spthy             # results_case_i_secrecy_sk.tsv を出力
+# OR 形・AND 形の lemma（all-traces）：制約なし
+tamarin-prover --derivcheck-timeout=0 --prove=i_secrecy_sk_not_Leak_IPK case_i_secrecy_sk.spthy
+
+# attack_*（exists-trace）：探索制約つき
+tamarin-prover --derivcheck-timeout=0 -D=SEARCH --prove=attack_I_R_by_IPK_peerNOsK case_auth_I_R.spthy
 ```
 
 lemma 名：
