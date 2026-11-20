@@ -26,10 +26,10 @@ matter-case-tamarin/
 │   └── case_r_secrecy_sk_needs_ipk_and_Eph.spthy
 │    
 ├── scripts/
-│   └── run_case.sh              models/case.spthy の全 lemma を実行（時計が正確 / LKGT）
+│   └── run.sh              models/case.spthy の全 lemma を実行（時計が正確 / LKGT）
 └── results/
-    ├── case.tsv                 models/case.spthy の結果
-    ├── case_resumption.txt      models/case_resumption.spthy の結果
+    ├── case_out.txt                 models/case.spthy の結果
+    ├── case_resumption_out.txt      models/case_resumption.spthy の結果
     └── boundary/             網羅の結果（各 .spthy に 1 ファイル）
 ```
 
