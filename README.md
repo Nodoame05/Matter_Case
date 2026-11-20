@@ -8,7 +8,7 @@ SCIS 2027 発表「Matter CASEプロトコルにおける鍵漏洩条件の網�
 ## ディレクトリ構成
 
 ```
-matter-case-tamarin/
+Matter-Case/
 ├── README.md
 ├── models/
 │   ├── case.spthy               CASE 本体：安全境界、前方秘匿性、NOC の有効期限（時計が正確 / LKGT）
@@ -23,8 +23,7 @@ matter-case-tamarin/
 │   ├── case_destId_needs_ipk.spthy
 │   ├── case_i_r_secrecy_Eph.spthy
 │   ├── case_i_secrecy_sk_needs_ipk_and_Eph.spthy
-│   └── case_r_secrecy_sk_needs_ipk_and_Eph.spthy
-│    
+│   └── case_r_secrecy_sk_needs_ipk_and_Eph.spthy  
 ├── scripts/
 │   └── run.sh              models/case.spthy の全 lemma を実行（時計が正確 / LKGT）
 └── results/
