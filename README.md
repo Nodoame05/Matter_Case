@@ -30,7 +30,7 @@ matter-case-tamarin/
 └── results/
     ├── case.tsv                 models/case.spthy の結果
     ├── case_resumption.txt      models/case_resumption.spthy の結果
-    └── enumeration/             網羅の結果（各 .spthy に 1 ファイル）
+    └── boundary/             網羅の結果（各 .spthy に 1 ファイル）
 ```
 
 主張の根拠は `models/` の 2 ファイルである。`boundary/` は境界を見つけた過程と、別のモデルでの検算にあたる（同じ意味の lemma で証明のステップ数まで一致する）。
