@@ -1,12 +1,12 @@
 #!/bin/bash
-# fixed_case4.spthy の lemma をすべて 1 本ずつ実行し、結果を results_<ファイル名>.tsv にまとめる。
+# models/case.spthy の lemma をすべて 1 本ずつ実行し、結果を results_<ファイル名>.tsv にまとめる。
 #
 # 使い方:
-#   ./run.sh [ファイル=fixed_case4.spthy] [制約なしの制限秒=1800] [探索制約つきの制限秒=900]
+#   ./run.sh [ファイル=../models/case.spthy] [制約なしの制限秒=1800] [探索制約つきの制限秒=900]
 #
 #   MODE=default ./run.sh   時計が正確なモデルだけ回す
 #   MODE=lkgt    ./run.sh   時計が遅れるモデル（-D=LKGT）の有効期限の lemma だけ回す
-#   ONLY=tight_  ./run.sh   名前がその文字列で始まる lemma だけ回す
+#   ONLY=attack_ ./run.sh   名前がその文字列で始まる lemma だけ回す
 #   RESUME=1     ./run.sh   結果ファイルで verified / falsified が出ている行は飛ばし、残りだけ回す
 #                           （ONLY と一緒に使うと、ONLY に合う行だけを取り直す）
 #   JSON=0       ./run.sh   トレースの JSON を出力しない
@@ -20,7 +20,7 @@
 #
 # 回し方（lemma ごとに自動で選ぶ）
 #   [時計が正確]
-#     exists-trace（case_finished, tight_*）      : -D=SEARCH
+#     exists-trace（case_finished, attack_*）     : -D=SEARCH
 #     exists-trace（有効期限: expiry_executable, attack_expired_key_*） : -D=SEARCH_EXP
 #     all-traces                                  : 制約なし。終わらなければ探索制約つきで反例を探す
 #   [時計が遅れる（-D=LKGT）] 有効期限の lemma（名前が EXP_RE に合うもの）だけ
@@ -34,7 +34,7 @@
 #     exists-trace の verified と all-traces の falsified は元のモデルでも成り立つ（採用する）。
 #     all-traces の verified と exists-trace の falsified は証明にならない（「不確定」と表示する）。
 
-f=${1:-fixed_case4.spthy}; t1=${2:-1800}; t2=${3:-900}
+f=${1:-../models/case.spthy}; t1=${2:-1800}; t2=${3:-900}
 MODE=${MODE:-all}
 EXP_RE='^(expiry_|no_commit_|lkgt_|attack_expired_)|_after_expiry_'     # 有効期限の lemma の名前
 JSON=${JSON:-1}
