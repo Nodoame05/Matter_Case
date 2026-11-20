@@ -1,9 +1,9 @@
-# matter-case-tamarin
+# Matter-Case
 
-Matter の CASE プロトコル（Certificate Authenticated Session Establishment）を Tamarin Prover で形式検証したモデルと結果です。
-鍵の漏洩条件をすべての組み合わせについて調べ、各セキュリティ性質が破れる必要十分条件（安全境界）を求めました。
+Matter の CASE プロトコル（Certificate Authenticated Session Establishment）を Tamarin Prover で形式検証したモデルと結果。
+鍵の漏洩条件をすべての組み合わせについて調べ、各セキュリティ性質が破れる必要十分条件（安全境界）を求めた。
 
-SCIS 2027 発表「Matter CASEプロトコルにおける鍵漏洩条件の網羅的検証と安全境界の特定」のための成果物です。
+SCIS 2027 発表「Matter CASEプロトコルにおける鍵漏洩条件の網羅的検証と安全境界の特定」のための成果物である。
 
 
 ## 主な結果
@@ -15,11 +15,11 @@ SCIS 2027 発表「Matter CASEプロトコルにおける鍵漏洩条件の網�
 | Destination ID | IPK |
 | 再開鍵 rsk（Resumption） | iEph ∨ rEph |
 
-- 相手NOsK は「セッション確立より前の漏洩」を指します。自分の NOsK はどの条件にも現れません。
-- 確立後に長期鍵（両者の NOsK、IPK）が漏れても、一時鍵が漏れなければ sk と SS は守られます（前方秘匿性）。
-- 検証者の時計が正確なら、NOC の期限切れ後に漏れた NOsK ではなりすませません。時計が遅れる検証者（Last Known Good Time で期限を判定）に対しては、期限切れ後に漏れた NOsK と IPK でなりすませるトレースがあります。
+- 相手NOsK は「セッション確立より前の漏洩」を指す。自分の NOsK はどの条件にも現れない。
+- 確立後に長期鍵（両者の NOsK、IPK）が漏れても、一時鍵が漏れなければ sk と SS は守られる（前方秘匿性）。
+- 検証者の時計が正確なら、NOC の期限切れ後に漏れた NOsK ではなりすませない。時計が遅れる検証者（Last Known Good Time で期限を判定）に対しては、期限切れ後に漏れた NOsK と IPK でなりすませるトレースがある。
 
-すべて記号モデル（Dolev–Yao）上の結果です。
+すべて記号モデル（Dolev–Yao）上の結果である。
 
 ## ディレクトリ構成
 
@@ -29,7 +29,7 @@ matter-case-tamarin/
 ├── models/
 │   ├── case.spthy               CASE 本体：安全境界、前方秘匿性、NOC の有効期限（時計が正確 / LKGT）
 │   └── case_resumption.spthy    Session Resumption：再開鍵の境界と認証
-├── boundary/                 漏洩条件の全組み合わせ（32 通り）の網羅
+├── boundary/                    漏洩条件の全組み合わせ（32 通り）の網羅
 │   ├── case_i_secrecy_sk.spthy
 │   ├── case_r_secrecy_sk.spthy
 │   ├── case_i_secrecy_SS.spthy
@@ -39,8 +39,8 @@ matter-case-tamarin/
 │   ├── case_destId_needs_ipk.spthy
 │   ├── case_i_r_secrecy_Eph.spthy
 │   ├── case_i_secrecy_sk_needs_ipk_and_Eph.spthy
-│   ├── case_r_secrecy_sk_needs_ipk_and_Eph.spthy  
-│   └─── run.sh                   1 lemma ずつ実行して TSV にまとめる
+│   ├── case_r_secrecy_sk_needs_ipk_and_Eph.spthy
+│   └── run.sh                   1 lemma ずつ実行して TSV にまとめる
 ├── scripts/
 │   └── run_case.sh              models/case.spthy の全 lemma を実行（時計が正確 / LKGT）
 └── results/
@@ -49,7 +49,7 @@ matter-case-tamarin/
     └── enumeration/             網羅の結果（各 .spthy に 1 ファイル）
 ```
 
-主張の根拠は `models/` の 2 ファイルです。`boundary/` は境界を見つけた過程と、別のモデルでの検算にあたります（同じ意味の lemma で証明のステップ数まで一致します）。
+主張の根拠は `models/` の 2 ファイルである。`boundary/` は境界を見つけた過程と、別のモデルでの検算にあたる（同じ意味の lemma で証明のステップ数まで一致する）。
 
 ## 動作環境
 
@@ -58,13 +58,13 @@ matter-case-tamarin/
 | Tamarin Prover | 1.12.0 |
 | Maude | 3.5.1 |
 
-各 lemma は別プロセスで 1 本ずつ実行します。ファイル全体を一度に `--prove` すると、メモリが足りなくなることがあります。最も重い lemma は 1 本あたり約 12 分でした（実行環境：[AMD Ryzen AI 9 365 w/ Radeon 880M (2.00 GHz)・32GB]）。
+各 lemma は別プロセスで 1 本ずつ実行する。ファイル全体を一度に `--prove` すると、メモリが足りなくなることがある。最も重い lemma は 1 本あたり約 12 分だった（実行環境：AMD Ryzen AI 9 365 w/ Radeon 880M (2.00 GHz)・32GB）。
 
 ## モデル
 
 ### 鍵と漏洩
 
-攻撃者は次の 5 種類の鍵を、いつでも漏らせます。
+攻撃者は次の 5 種類の鍵を、いつでも漏らせる。
 
 | 記号 | 鍵 | lemma で例外として扱う漏洩 |
 |---|---|---|
@@ -76,15 +76,16 @@ matter-case-tamarin/
 
 ### NOC の有効期限
 
-期限は時刻ではなくイベントで表します。
+期限は時刻ではなくイベントで表す。
 
-- `NOC_Expired(n)`：n の NOC の notAfter が実時間で過ぎた。時点は攻撃者が選び、NOC ごとに 1 回だけ起きます。期限切れの後も秘密鍵は消えず、漏洩しえます。
-- `UseValid(v, n)`：検証者 v が相手 n の NOC を受け入れた。期限の判定は検証する側が行います。
-- 既定（時計が正確）：期限切れの後は、誰もその NOC を使わず、受け入れません。
-- `-D=LKGT`（時計が遅れる）：検証者ごとの時計が、実際の期限切れより後で `KnowsExpired(v, n)` として追いつきます。追いつく前は期限切れの NOC も受け入れます。時計が最後まで追いつかないトレースも含みます。
+- `NOC_Expired(n)`：n の NOC の notAfter が実時間で過ぎた。時点は攻撃者が選び、NOC ごとに 1 回だけ起きる。期限切れの後も秘密鍵は消えず、漏洩しうる。
+- `UseValid(v, n)`：検証者 v が相手 n の NOC を受け入れた。期限の判定は検証する側が行う。
+- 既定（時計が正確）：期限切れの後は、誰もその NOC を使わず、受け入れない。
+- `-D=LKGT`（時計が遅れる）：検証者ごとの時計が、実際の期限切れより後で `KnowsExpired(v, n)` として追いつく。追いつく前は期限切れの NOC も受け入れる。時計が最後まで追いつかないトレースも含む。
 
 ### 省略したもの
-`case_resumption.spthy` は CASE 本体を「正しく完了した」ことに抽象化しており、NOsK の漏洩は扱いません。
+
+`case_resumption.spthy` は CASE 本体を「正しく完了した」ことに抽象化しており、NOsK の漏洩は扱わない。
 
 ## 実行方法
 
@@ -94,7 +95,7 @@ matter-case-tamarin/
 
 ```sh
 cd scripts
-./run_case.sh ../models/case.spthy          # 時計が正確 → LKGT の順に全 lemma
+./run_case.sh ../models/case.spthy                # 時計が正確 → LKGT の順に全 lemma
 MODE=default ./run_case.sh ../models/case.spthy   # 時計が正確なモデルだけ
 MODE=lkgt    ./run_case.sh ../models/case.spthy   # LKGT の有効期限の lemma だけ
 ```
@@ -138,7 +139,7 @@ lemma 名の約束：
 
 ## 探索制約と結果の読み方
 
-`-D=SEARCH` と `-D=SEARCH_EXP` は、探索を終わらせるための制約です（ファブリック 1 つ、各役割 1 セッション、ノード 2 台。SEARCH は期限切れも禁止）。制約はトレースを取り除くだけなので、結果の有効性は次のとおりです。
+`-D=SEARCH` と `-D=SEARCH_EXP` は、探索を終わらせるための制約である（ファブリック 1 つ、各役割 1 セッション、ノード 2 台。SEARCH は期限切れも禁止）。制約はトレースを取り除くだけなので、結果の有効性は次のとおり。
 
 | lemma | 制約つきの結果 | 元のモデルについて言えるか |
 |---|---|---|
