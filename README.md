@@ -5,22 +5,6 @@ Matter の CASE プロトコル（Certificate Authenticated Session Establishmen
 
 SCIS 2027 発表「Matter CASEプロトコルにおける鍵漏洩条件の網羅的検証と安全境界の特定」のための成果物である。
 
-
-## 主な結果
-
-| 性質 | 破れるための必要十分条件 |
-|---|---|
-| セッション鍵 sk、相互認証（I→R、R→I） | IPK ∧ (相手NOsK ∨ iEph ∨ rEph) |
-| 共有秘密 SS | iEph ∨ rEph ∨ (IPK ∧ 相手NOsK) |
-| Destination ID | IPK |
-| 再開鍵 rsk（Resumption） | iEph ∨ rEph |
-
-- 相手NOsK は「セッション確立より前の漏洩」を指す。自分の NOsK はどの条件にも現れない。
-- 確立後に長期鍵（両者の NOsK、IPK）が漏れても、一時鍵が漏れなければ sk と SS は守られる（前方秘匿性）。
-- 検証者の時計が正確なら、NOC の期限切れ後に漏れた NOsK ではなりすませない。時計が遅れる検証者（Last Known Good Time で期限を判定）に対しては、期限切れ後に漏れた NOsK と IPK でなりすませるトレースがある。
-
-すべて記号モデル（Dolev–Yao）上の結果である。
-
 ## ディレクトリ構成
 
 ```
@@ -129,7 +113,7 @@ cd boundary
 ./run.sh case_i_secrecy_sk.spthy             # results_case_i_secrecy_sk.tsv を出力
 ```
 
-lemma 名の約束：
+lemma 名：
 
 | 名前 | 意味 |
 |---|---|
