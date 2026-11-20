@@ -23,8 +23,8 @@ matter-case-tamarin/
 │   ├── case_destId_needs_ipk.spthy
 │   ├── case_i_r_secrecy_Eph.spthy
 │   ├── case_i_secrecy_sk_needs_ipk_and_Eph.spthy
-│   ├── case_r_secrecy_sk_needs_ipk_and_Eph.spthy
-│   └── run.sh                   1 lemma ずつ実行して TSV にまとめる
+│   └── case_r_secrecy_sk_needs_ipk_and_Eph.spthy
+│    
 ├── scripts/
 │   └── run_case.sh              models/case.spthy の全 lemma を実行（時計が正確 / LKGT）
 └── results/
