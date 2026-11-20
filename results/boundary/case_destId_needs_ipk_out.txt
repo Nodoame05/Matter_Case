@@ -1,0 +1,37 @@
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.12.0
+Maude version 3.5.1
+Git revision: UNKNOWN, branch: UNKNOWN
+Compiled at: 2026-03-08 10:05:47.616272992 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: case_destId_needs_ipk.spthy
+
+  processing time: 168.83s
+  
+  destId_needs_ipk (all-traces): falsified - found trace (10 steps)
+  destId_needs_ipk_not_Leak_IPK (all-traces): verified (16 steps)
+  destId_needs_ipk_not_Leak_ownNOsK (all-traces): falsified - found trace (10 steps)
+  destId_needs_ipk_not_Leak_anyNOsK (all-traces): falsified - found trace (10 steps)
+  destId_needs_ipk_not_Leak_anyEph (all-traces): falsified - found trace (10 steps)
+  destId_needs_ipk_not_Leak_IPK_ownNOsK (all-traces): verified (16 steps)
+  destId_needs_ipk_not_Leak_IPK_anyNOsK (all-traces): verified (16 steps)
+  destId_needs_ipk_not_Leak_IPK_anyEph (all-traces): verified (16 steps)
+  destId_needs_ipk_not_Leak_ownNOsK_anyNOsK (all-traces): falsified - found trace (10 steps)
+  destId_needs_ipk_not_Leak_ownNOsK_anyEph (all-traces): falsified - found trace (10 steps)
+  destId_needs_ipk_not_Leak_anyNOsK_anyEph (all-traces): falsified - found trace (10 steps)
+  destId_needs_ipk_not_Leak_IPK_ownNOsK_anyNOsK (all-traces): verified (16 steps)
+  destId_needs_ipk_not_Leak_IPK_ownNOsK_anyEph (all-traces): verified (16 steps)
+  destId_needs_ipk_not_Leak_IPK_anyNOsK_anyEph (all-traces): verified (16 steps)
+  destId_needs_ipk_not_Leak_ownNOsK_anyNOsK_anyEph (all-traces): falsified - found trace (10 steps)
+  destId_needs_ipk_not_Leak_all (all-traces): verified (16 steps)
+
+==============================================================================

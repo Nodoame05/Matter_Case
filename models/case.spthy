@@ -1,0 +1,665 @@
+theory MatterCASE
+begin
+
+/*
+ * 1 lemma ずつ実行: tamarin-prover --derivcheck-timeout=0 --prove=<lemma> fixed_case4.spthy
+ *   attack_*          : -D=SEARCH
+ *   expiry_executable, attack_expired_key_* : -D=SEARCH_EXP
+ *   時計が遅れる場合  : -D=LKGT を追加
+ */
+
+builtins: diffie-hellman, signing, hashing
+
+functions: hmac/2, kdf/3, aead_enc/4, aead_dec/4
+
+equations:
+  aead_dec(k, aead_enc(k, m, a, n), a, n) = m
+
+rule Fabric_Setup:
+  [
+    Fr(~rootSk),
+    Fr(~fid),
+    Fr(~ipk)
+  ]--[
+    FabricCreated(~fid)
+  ]->[
+    !Fabric(~fid, pk(~rootSk), ~ipk),
+    !RootSk(~fid, ~rootSk),
+    Out(<~fid, pk(~rootSk)>)
+  ]
+
+rule Node_Commission:
+  let
+    body = <~nid, ~fid, pk(~NOsK)>
+    noc  = <body, sign(body, rootSk)>
+  in
+  [
+    !RootSk(~fid, rootSk),
+    Fr(~nid),
+    Fr(~NOsK)
+  ]--[
+    NodeCommissioned(~nid, ~fid)
+  ]->[
+    !NOsK(~nid, ~fid, ~NOsK, noc),
+    !NodeInfo(~nid, ~fid),
+    Out(noc)
+  ]
+
+rule Expire_NOC:
+  [
+    !NOsK(nid, fid, NOsK, noc)
+  ]--[
+    NOC_Expired(nid),
+    OnlyOnce(<'expire', nid>)
+  ]->[ ]
+
+#ifdef LKGT
+
+rule Clock_CatchUp:
+  [
+    !NodeInfo(v, fid),
+    !NodeInfo(n, fid)
+  ]--[
+    KnowsExpired(v, n),
+    OnlyOnce(<'LKGT', v, n>)
+  ]->[ ]
+#endif
+
+rule NOsK_Leak:
+  [
+    !NOsK(nid, fid, NOsK, noc)
+  ]--[
+    Leak_NOsK(nid)
+  ]->[
+    Out(NOsK)
+  ]
+
+rule IPK_Leak:
+  [
+    !Fabric(fid, rootPk, ipk)
+  ]--[
+    Leak_IPK(fid)
+  ]->[
+    Out(ipk)
+  ]
+
+rule iEphsk_Leak:
+  [
+    !I_Eph(iNid, iEphpK, ~iEphsK)
+  ]--[
+    Leak_iEphsk(iNid, iEphpK),
+    Leak_Eph(iEphpK)
+  ]->[
+    Out(~iEphsK)
+  ]
+
+rule rEphsk_Leak:
+  [
+    !R_Eph(rNid, rEphpK, ~rEphsK)
+  ]--[
+    Leak_rEphsk(rNid, rEphpK),
+    Leak_Eph(rEphpK)
+  ]->[
+    Out(~rEphsK)
+  ]
+
+rule I_Sigma1:
+  let
+    iEphpK = 'g'^~iEphsK
+    destId = hmac(ipk, <~iRand, rootPk, ~fid, rNid>)
+    Msg1 = <'Sigma1', ~iRand, ~iSid, destId, iEphpK, 'noResumption'>
+  in
+  [
+    !NOsK(iNid, ~fid, iNOsK, nocI),
+    !NodeInfo(rNid, ~fid),
+    !Fabric(~fid, rootPk, ipk),
+    Fr(~iEphsK),
+    Fr(~iRand),
+    Fr(~iSid)
+  ]--[
+    I_Sent1(iNid, rNid, destId),
+    Eph_I(iNid, iEphpK, ~iEphsK),
+    UseOwn(iNid)
+  ]->[
+    I_St1(iNid, rNid, ~fid, ~iEphsK, Msg1),
+    !I_Eph(iNid, iEphpK, ~iEphsK),
+    Out(Msg1)
+  ]
+
+rule R_Sigma2:
+  let
+    destId = hmac(ipk, <iRand, rootPk, ~fid, rNid>)
+    Msg1   = <'Sigma1', iRand, iSid, destId, iEphpK, 'noResumption'>
+    rEphpK = 'g'^~rEphsK
+    SS     = iEphpK^~rEphsK
+    sig2   = sign(<nocR, rEphpK, iEphpK>, rNOsK)
+    th2    = h(Msg1)
+    s2k    = kdf(SS, <ipk, ~rRand, rEphpK, th2>, 'Sigma2')
+    enc2   = aead_enc(s2k, <nocR, sig2, ~resId>, 'empty', 'NCASE_Sigma2N')
+    Msg2   = <'Sigma2', ~rRand, ~rSid, rEphpK, enc2>
+  in
+  [
+    In(Msg1),
+    !NOsK(rNid, ~fid, rNOsK, nocR),
+    !Fabric(~fid, rootPk, ipk),
+    Fr(~rEphsK),
+    Fr(~rRand),
+    Fr(~rSid),
+    Fr(~resId)
+  ]--[
+    R_ValidSigma1(rNid, ~fid, destId),
+    Running_R_Sigma2(rNid, <iEphpK, rEphpK, ~rRand, th2>),
+    Transcript_R(rNid, h(<Msg1, Msg2>)),
+    Eph_R(rNid, rEphpK, ~rEphsK),
+    UseOwn(rNid)
+  ]->[
+    R_St1(rNid, ~fid, ~rEphsK, iEphpK, Msg1, Msg2, s2k, ~resId),
+    !R_Eph(rNid, rEphpK, ~rEphsK),
+    Out(Msg2)
+  ]
+
+rule I_Sigma3:
+  let
+    iEphpK = 'g'^~iEphsK
+    SS     = rEphpK^~iEphsK
+    th2    = h(Msg1)
+    s2k    = kdf(SS, <ipk, rRand, rEphpK, th2>, 'Sigma2')
+    bodyR  = <rNid, ~fid, pkR>
+    nocR   = <bodyR, certSigR>
+    enc2   = aead_enc(s2k, <nocR, sig2, resId>, 'empty', 'NCASE_Sigma2N')
+    Msg2   = <'Sigma2', rRand, rSid, rEphpK, enc2>
+    sig3   = sign(<nocI, iEphpK, rEphpK>, iNOsK)
+    th3    = h(<Msg1, Msg2>)
+    s3k    = kdf(SS, <ipk, th3>, 'Sigma3')
+    enc3   = aead_enc(s3k, <nocI, sig3>, 'empty', 'NCASE_Sigma3N')
+    Msg3   = <'Sigma3', enc3>
+    sk     = kdf(SS, <ipk, h(<Msg1, Msg2, Msg3>)>, 'SessionKeys')
+  in
+  [
+    I_St1(iNid, rNid, ~fid, ~iEphsK, Msg1),
+    In(Msg2),
+    !NOsK(iNid, ~fid, iNOsK, nocI),
+    !Fabric(~fid, rootPk, ipk)
+  ]--[
+    Eq(verify(certSigR, bodyR, rootPk), true),
+    Eq(verify(sig2, <nocR, rEphpK, iEphpK>, pkR), true),
+    Commit_I(iNid, rNid, ~fid, <iEphpK, rEphpK, rRand, th2>),
+    Running_I(iNid, rNid, ~fid, iEphpK, rEphpK, sk),
+    Transcript_I(iNid, rNid, th3),
+    SS_I(iNid, rNid, ~fid, iEphpK, rEphpK, SS),
+    SK_I(iNid, rNid, ~fid, iEphpK, rEphpK, sk),
+    UseOwn(iNid),
+    UseValid(iNid, rNid)
+  ]->[
+    I_ResSt(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId),
+    Out(Msg3)
+  ]
+
+rule R_Finish:
+  let
+    rEphpK = 'g'^~rEphsK
+    SS     = iEphpK^~rEphsK
+    th3    = h(<Msg1, Msg2>)
+    s3k    = kdf(SS, <ipk, th3>, 'Sigma3')
+    bodyI  = <iNid, ~fid, pkI>
+    nocI   = <bodyI, certSigI>
+    enc3   = aead_enc(s3k, <nocI, sig3>, 'empty', 'NCASE_Sigma3N')
+    Msg3   = <'Sigma3', enc3>
+    sk     = kdf(SS, <ipk, h(<Msg1, Msg2, Msg3>)>, 'SessionKeys')
+  in
+  [
+    R_St1(rNid, ~fid, ~rEphsK, iEphpK, Msg1, Msg2, s2k, ~resId),
+    In(Msg3),
+    !Fabric(~fid, rootPk, ipk)
+  ]--[
+    Eq(verify(certSigI, bodyI, rootPk), true),
+    Eq(verify(sig3, <nocI, iEphpK, rEphpK>, pkI), true),
+    Commit_R(rNid, iNid, ~fid, iEphpK, rEphpK, sk),
+    SS_R(rNid, iNid, ~fid, iEphpK, rEphpK, SS),
+    SK_R(rNid, iNid, ~fid, iEphpK, rEphpK, sk),
+    UseValid(rNid, iNid)
+  ]->[
+    R_ResSt(rNid, iNid, ~fid, iEphpK, rEphpK, SS, ~resId)
+  ]
+
+restriction Equality:
+  "All x y #i. Eq(x, y) @ #i ==> x = y"
+
+restriction OnlyOnce:
+  "All x #i #j. OnlyOnce(x) @ #i & OnlyOnce(x) @ #j ==> #i = #j"
+
+#ifdef LKGT
+
+restriction clock_after_expiry:
+  "All v n #k. KnowsExpired(v, n) @ #k ==> Ex #e. NOC_Expired(n) @ #e & #e < #k"
+
+restriction check_with_own_clock:
+  "All v n #c #k. UseValid(v, n) @ #c & KnowsExpired(v, n) @ #k ==> #c < #k"
+
+restriction own_check_with_own_clock:
+  "All n #u #k. UseOwn(n) @ #u & KnowsExpired(n, n) @ #k ==> #u < #k"
+#else
+
+restriction own_not_expired:
+  "All n #e #u. NOC_Expired(n) @ #e & UseOwn(n) @ #u ==> #u < #e"
+restriction peer_not_expired:
+  "All v n #e #c. NOC_Expired(n) @ #e & UseValid(v, n) @ #c ==> #c < #e"
+#endif
+
+#ifdef SEARCH
+// exists-trace 専用。all-traces の lemma には付けない（verified が証明にならない）
+restriction search_one_fabric:
+  "All f1 f2 #i #j. FabricCreated(f1) @ #i & FabricCreated(f2) @ #j ==> #i = #j"
+restriction search_one_initiator_session:
+  "All a b c d e f #i #j. Eph_I(a, b, c) @ #i & Eph_I(d, e, f) @ #j ==> #i = #j"
+restriction search_one_responder_session:
+  "All a b c d e f #i #j. Eph_R(a, b, c) @ #i & Eph_R(d, e, f) @ #j ==> #i = #j"
+restriction search_two_nodes:
+  "All a b c fa fb fc #i #j #k. NodeCommissioned(a, fa) @ #i & NodeCommissioned(b, fb) @ #j & NodeCommissioned(c, fc) @ #k
+   ==> #i = #j | #j = #k | #i = #k"
+restriction search_no_expiry:
+  "All n #i. NOC_Expired(n) @ #i ==> F"
+#endif
+
+#ifdef SEARCH_EXP
+// SEARCH から search_no_expiry を除いたもの
+
+restriction searchexp_one_fabric:
+  "All f1 f2 #i #j. FabricCreated(f1) @ #i & FabricCreated(f2) @ #j ==> #i = #j"
+restriction searchexp_one_initiator_session:
+  "All a b c d e f #i #j. Eph_I(a, b, c) @ #i & Eph_I(d, e, f) @ #j ==> #i = #j"
+restriction searchexp_one_responder_session:
+  "All a b c d e f #i #j. Eph_R(a, b, c) @ #i & Eph_R(d, e, f) @ #j ==> #i = #j"
+restriction searchexp_two_nodes:
+  "All a b c fa fb fc #i #j #k. NodeCommissioned(a, fa) @ #i & NodeCommissioned(b, fb) @ #j & NodeCommissioned(c, fc) @ #k
+   ==> #i = #j | #j = #k | #i = #k"
+#endif
+
+// 実行可能性: 漏洩なしで I と R が同じ sk で CASE を完了できる
+lemma case_finished:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #j.
+     Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+   & Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j & #j < #i
+   & not (Ex n #k. Leak_NOsK(n) @ #k)
+   & not (Ex f #k. Leak_IPK(f) @ #k)
+   & not (Ex p #k. Leak_Eph(p) @ #k)"
+
+// エフェメラル秘密鍵: 自身の漏洩以外では知られない
+lemma boundary_eph_I:
+  "All iNid iEphpK iEphsK #i. Eph_I(iNid, iEphpK, iEphsK) @ #i ==>
+    not (Ex #j. K(iEphsK) @ #j)
+    | (Ex #l. Leak_Eph(iEphpK) @ #l)"
+
+lemma boundary_eph_R:
+  "All rNid rEphpK rEphsK #i. Eph_R(rNid, rEphpK, rEphsK) @ #i ==>
+    not (Ex #j. K(rEphsK) @ #j)
+    | (Ex #l. Leak_Eph(rEphpK) @ #l)"
+
+// Destination ID: 受理した Sigma1 は正規の送信か、IPK が漏れている（attack_* で IPK だけで偽造できることを示す）
+lemma boundary_destId:
+  "All rNid fid destId #i. R_ValidSigma1(rNid, fid, destId) @ #i ==>
+    (Ex iNid #k. I_Sent1(iNid, rNid, destId) @ #k & #k < #i)
+    | (Ex #j. Leak_IPK(fid) @ #j & #j < #i)"
+
+lemma attack_destId_IPK:
+  exists-trace
+  "Ex rNid fid destId #i #k. R_ValidSigma1(rNid, fid, destId) @ #i
+    & not (Ex iNid #s. I_Sent1(iNid, rNid, destId) @ #s)
+    & Leak_IPK(fid) @ #k & #k < #i
+    & not (Ex n #l. Leak_NOsK(n) @ #l)
+    & not (Ex p #l. Leak_Eph(p) @ #l)"
+
+// 共有秘密 SS: 破れる ⇒ iEph ∨ rEph ∨ (IPK ∧ peerNOsK)。attack_* は各最小攻撃集合だけで破れることを示す
+// peerNOsK = 相手の NOsK がセッション確立 #i より前に漏れる
+lemma boundary_SS_I:
+  "All iNid rNid fid iEphpK rEphpK SS #i. SS_I(iNid, rNid, fid, iEphpK, rEphpK, SS) @ #i ==>
+    not (Ex #j. K(SS) @ #j)
+    | (Ex #l. Leak_Eph(iEphpK) @ #l)
+    | (Ex #l. Leak_Eph(rEphpK) @ #l)
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i) )"
+
+lemma boundary_SS_R:
+  "All rNid iNid fid iEphpK rEphpK SS #i. SS_R(rNid, iNid, fid, iEphpK, rEphpK, SS) @ #i ==>
+    not (Ex #j. K(SS) @ #j)
+    | (Ex #l. Leak_Eph(iEphpK) @ #l)
+    | (Ex #l. Leak_Eph(rEphpK) @ #l)
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i) )"
+
+lemma attack_SS_I_iEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK SS #i #j #l. SS_I(iNid, rNid, fid, iEphpK, rEphpK, SS) @ #i & K(SS) @ #j
+    & Leak_Eph(iEphpK) @ #l
+    & not (Ex #m. Leak_Eph(rEphpK) @ #m)
+    & not (Ex f #m. Leak_IPK(f) @ #m)
+    & not (Ex n #m. Leak_NOsK(n) @ #m)"
+
+lemma attack_SS_I_rEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK SS #i #j #l. SS_I(iNid, rNid, fid, iEphpK, rEphpK, SS) @ #i & K(SS) @ #j
+    & Leak_Eph(rEphpK) @ #l
+    & not (Ex #m. Leak_Eph(iEphpK) @ #m)
+    & not (Ex f #m. Leak_IPK(f) @ #m)
+    & not (Ex n #m. Leak_NOsK(n) @ #m)"
+
+lemma attack_SS_I_IPK_peerNOsK:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK SS #i #j #k1 #k2. SS_I(iNid, rNid, fid, iEphpK, rEphpK, SS) @ #i & K(SS) @ #j
+    & Leak_IPK(fid) @ #k1 & Leak_NOsK(rNid) @ #k2 & #k2 < #i
+    & not (Ex #m. Leak_NOsK(iNid) @ #m)
+    & not (Ex p #m. Leak_Eph(p) @ #m)"
+
+lemma attack_SS_R_iEph:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK SS #i #j #l. SS_R(rNid, iNid, fid, iEphpK, rEphpK, SS) @ #i & K(SS) @ #j
+    & Leak_Eph(iEphpK) @ #l
+    & not (Ex #m. Leak_Eph(rEphpK) @ #m)
+    & not (Ex f #m. Leak_IPK(f) @ #m)
+    & not (Ex n #m. Leak_NOsK(n) @ #m)"
+
+lemma attack_SS_R_rEph:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK SS #i #j #l. SS_R(rNid, iNid, fid, iEphpK, rEphpK, SS) @ #i & K(SS) @ #j
+    & Leak_Eph(rEphpK) @ #l
+    & not (Ex #m. Leak_Eph(iEphpK) @ #m)
+    & not (Ex f #m. Leak_IPK(f) @ #m)
+    & not (Ex n #m. Leak_NOsK(n) @ #m)"
+
+lemma attack_SS_R_IPK_peerNOsK:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK SS #i #j #k1 #k2. SS_R(rNid, iNid, fid, iEphpK, rEphpK, SS) @ #i & K(SS) @ #j
+    & Leak_IPK(fid) @ #k1 & Leak_NOsK(iNid) @ #k2 & #k2 < #i
+    & not (Ex #m. Leak_NOsK(rNid) @ #m)
+    & not (Ex p #m. Leak_Eph(p) @ #m)"
+
+// セッション鍵 sk: 破れる ⇒ IPK ∧ (peerNOsK ∨ iEph ∨ rEph)。attack_* は各最小攻撃集合だけで破れることを示す
+lemma boundary_sk_I:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+    not (Ex #j. K(sk) @ #j)
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+        | (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+lemma boundary_sk_R:
+  "All rNid iNid fid iEphpK rEphpK sk #i. SK_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+    not (Ex #j. K(sk) @ #j)
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+        | (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+lemma attack_sk_I_IPK_peerNOsK:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK sk #i #j #k1 #k2. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i & K(sk) @ #j
+    & Leak_IPK(fid) @ #k1 & Leak_NOsK(rNid) @ #k2 & #k2 < #i
+    & not (Ex #m. Leak_NOsK(iNid) @ #m)
+    & not (Ex p #m. Leak_Eph(p) @ #m)"
+
+lemma attack_sk_I_IPK_iEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK sk #i #j #k1 #k2. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i & K(sk) @ #j
+    & Leak_IPK(fid) @ #k1 & Leak_Eph(iEphpK) @ #k2
+    & not (Ex #m. Leak_Eph(rEphpK) @ #m)
+    & not (Ex n #m. Leak_NOsK(n) @ #m)"
+
+lemma attack_sk_I_IPK_rEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK sk #i #j #k1 #k2. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i & K(sk) @ #j
+    & Leak_IPK(fid) @ #k1 & Leak_Eph(rEphpK) @ #k2
+    & not (Ex #m. Leak_Eph(iEphpK) @ #m)
+    & not (Ex n #m. Leak_NOsK(n) @ #m)"
+
+lemma attack_sk_R_IPK_peerNOsK:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #j #k1 #k2. SK_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i & K(sk) @ #j
+    & Leak_IPK(fid) @ #k1 & Leak_NOsK(iNid) @ #k2 & #k2 < #i
+    & not (Ex #m. Leak_NOsK(rNid) @ #m)
+    & not (Ex p #m. Leak_Eph(p) @ #m)"
+
+lemma attack_sk_R_IPK_iEph:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #j #k1 #k2. SK_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i & K(sk) @ #j
+    & Leak_IPK(fid) @ #k1 & Leak_Eph(iEphpK) @ #k2
+    & not (Ex #m. Leak_Eph(rEphpK) @ #m)
+    & not (Ex n #m. Leak_NOsK(n) @ #m)"
+
+lemma attack_sk_R_IPK_rEph:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #j #k1 #k2. SK_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i & K(sk) @ #j
+    & Leak_IPK(fid) @ #k1 & Leak_Eph(rEphpK) @ #k2
+    & not (Ex #m. Leak_Eph(iEphpK) @ #m)
+    & not (Ex n #m. Leak_NOsK(n) @ #m)"
+
+// 前方秘匿性: 確立後の NOsK 漏洩と IPK 漏洩をすべて許しても sk / SS は守られる
+lemma forward_secrecy_sk_I:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i
+    & not (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+    & not (Ex #l. Leak_Eph(iEphpK) @ #l)
+    & not (Ex #l. Leak_Eph(rEphpK) @ #l)
+    ==> not (Ex #j. K(sk) @ #j)"
+
+lemma forward_secrecy_sk_R:
+  "All rNid iNid fid iEphpK rEphpK sk #i. SK_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & not (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+    & not (Ex #l. Leak_Eph(iEphpK) @ #l)
+    & not (Ex #l. Leak_Eph(rEphpK) @ #l)
+    ==> not (Ex #j. K(sk) @ #j)"
+
+lemma forward_secrecy_SS_I:
+  "All iNid rNid fid iEphpK rEphpK SS #i. SS_I(iNid, rNid, fid, iEphpK, rEphpK, SS) @ #i
+    & not (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+    & not (Ex #l. Leak_Eph(iEphpK) @ #l)
+    & not (Ex #l. Leak_Eph(rEphpK) @ #l)
+    ==> not (Ex #j. K(SS) @ #j)"
+
+lemma forward_secrecy_SS_R:
+  "All rNid iNid fid iEphpK rEphpK SS #i. SS_R(rNid, iNid, fid, iEphpK, rEphpK, SS) @ #i
+    & not (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+    & not (Ex #l. Leak_Eph(iEphpK) @ #l)
+    & not (Ex #l. Leak_Eph(rEphpK) @ #l)
+    ==> not (Ex #j. K(SS) @ #j)"
+
+// 認証（injective agreement）: 破れる ⇒ IPK ∧ (peerNOsK ∨ iEph ∨ rEph)。attack_* は各最小攻撃集合だけで破れることを示す
+lemma boundary_auth_I_R:
+  "All iNid rNid fid iEphpK rEphpK rRand th2 #i. Commit_I(iNid, rNid, fid, <iEphpK, rEphpK, rRand, th2>) @ #i ==>
+    ( (Ex #j. Running_R_Sigma2(rNid, <iEphpK, rEphpK, rRand, th2>) @ #j & #j < #i)
+    & not (Ex iNid2 rNid2 #i2. Commit_I(iNid2, rNid2, fid, <iEphpK, rEphpK, rRand, th2>) @ #i2 & not (#i2 = #i)) )
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+        | (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+lemma boundary_auth_R_I:
+  "All rNid iNid fid iEphpK rEphpK sk #i. Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+    ( (Ex #j. Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j & #j < #i)
+    & not (Ex rNid2 iNid2 #i2. Commit_R(rNid2, iNid2, fid, iEphpK, rEphpK, sk) @ #i2 & not (#i2 = #i)) )
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+        | (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+lemma attack_auth_I_R_IPK_peerNOsK:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK rRand th2 #i #k1 #k2.
+    Commit_I(iNid, rNid, fid, <iEphpK, rEphpK, rRand, th2>) @ #i
+    & not (Ex #j. Running_R_Sigma2(rNid, <iEphpK, rEphpK, rRand, th2>) @ #j)
+    & Leak_IPK(fid) @ #k1 & Leak_NOsK(rNid) @ #k2 & #k2 < #i
+    & not (Ex #l. Leak_NOsK(iNid) @ #l)
+    & not (Ex p #l. Leak_Eph(p) @ #l)"
+
+lemma attack_auth_I_R_IPK_iEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK rRand th2 #i #k1 #k2.
+    Commit_I(iNid, rNid, fid, <iEphpK, rEphpK, rRand, th2>) @ #i
+    & not (Ex #j. Running_R_Sigma2(rNid, <iEphpK, rEphpK, rRand, th2>) @ #j)
+    & Leak_IPK(fid) @ #k1 & Leak_Eph(iEphpK) @ #k2
+    & not (Ex n #l. Leak_NOsK(n) @ #l)
+    & not (Ex #l. Leak_Eph(rEphpK) @ #l)"
+
+lemma attack_auth_I_R_IPK_rEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK rRand th2 #i #k1 #k2.
+    Commit_I(iNid, rNid, fid, <iEphpK, rEphpK, rRand, th2>) @ #i
+    & not (Ex #j. Running_R_Sigma2(rNid, <iEphpK, rEphpK, rRand, th2>) @ #j)
+    & Leak_IPK(fid) @ #k1 & Leak_Eph(rEphpK) @ #k2
+    & not (Ex n #l. Leak_NOsK(n) @ #l)
+    & not (Ex #l. Leak_Eph(iEphpK) @ #l)"
+
+lemma attack_auth_R_I_IPK_peerNOsK:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #k1 #k2.
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & not (Ex #j. Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j)
+    & Leak_IPK(fid) @ #k1 & Leak_NOsK(iNid) @ #k2 & #k2 < #i
+    & not (Ex #l. Leak_NOsK(rNid) @ #l)
+    & not (Ex p #l. Leak_Eph(p) @ #l)"
+
+lemma attack_auth_R_I_IPK_iEph:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #k1 #k2.
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & not (Ex #j. Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j)
+    & Leak_IPK(fid) @ #k1 & Leak_Eph(iEphpK) @ #k2
+    & not (Ex n #l. Leak_NOsK(n) @ #l)
+    & not (Ex #l. Leak_Eph(rEphpK) @ #l)"
+
+lemma attack_auth_R_I_IPK_rEph:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #k1 #k2.
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & not (Ex #j. Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j)
+    & Leak_IPK(fid) @ #k1 & Leak_Eph(rEphpK) @ #k2
+    & not (Ex n #l. Leak_NOsK(n) @ #l)
+    & not (Ex #l. Leak_Eph(iEphpK) @ #l)"
+
+// 有効期限の実行可能性: CASE 完了後に両者の NOC が期限切れになるトレースがある
+lemma expiry_executable:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #j #e1 #e2.
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j & #j < #i
+    & NOC_Expired(iNid) @ #e1 & NOC_Expired(rNid) @ #e2 & #i < #e1 & #i < #e2
+    & not (Ex n #k. Leak_NOsK(n) @ #k)
+    & not (Ex f #k. Leak_IPK(f) @ #k)
+    & not (Ex p #k. Leak_Eph(p) @ #k)"
+
+// 期限切れの NOC ではセッションを確立しない（LKGT では falsified）
+lemma no_commit_after_peer_expiry_I:
+  "All iNid rNid fid data #i #e.
+    Commit_I(iNid, rNid, fid, data) @ #i
+    & NOC_Expired(rNid) @ #e ==> #i < #e"
+
+lemma no_commit_after_peer_expiry_R:
+  "All rNid iNid fid iEphpK rEphpK sk #i #e.
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & NOC_Expired(iNid) @ #e ==> #i < #e"
+
+lemma no_commit_after_own_expiry_I:
+  "All iNid rNid fid data #i #e.
+    Commit_I(iNid, rNid, fid, data) @ #i
+    & NOC_Expired(iNid) @ #e ==> #i < #e"
+
+// 期限切れ後に漏れた NOsK は認証・sk を破るのに使えない（LKGT では falsified）
+lemma auth_I_R_leak_after_expiry_harmless:
+  "All iNid rNid fid iEphpK rEphpK rRand th2 #i.
+    Commit_I(iNid, rNid, fid, <iEphpK, rEphpK, rRand, th2>) @ #i
+    & (All #k. Leak_NOsK(rNid) @ #k ==> (Ex #e. NOC_Expired(rNid) @ #e & #e < #k)) ==>
+    ( (Ex #j. Running_R_Sigma2(rNid, <iEphpK, rEphpK, rRand, th2>) @ #j & #j < #i)
+      & not (Ex iNid2 rNid2 #i2. Commit_I(iNid2, rNid2, fid, <iEphpK, rEphpK, rRand, th2>) @ #i2 & not (#i2 = #i)) )
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+lemma auth_R_I_leak_after_expiry_harmless:
+  "All rNid iNid fid iEphpK rEphpK sk #i.
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & (All #k. Leak_NOsK(iNid) @ #k ==> (Ex #e. NOC_Expired(iNid) @ #e & #e < #k)) ==>
+    ( (Ex #j. Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j & #j < #i)
+      & not (Ex rNid2 iNid2 #i2. Commit_R(rNid2, iNid2, fid, iEphpK, rEphpK, sk) @ #i2 & not (#i2 = #i)) )
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+lemma sk_I_leak_after_expiry_harmless:
+  "All iNid rNid fid iEphpK rEphpK sk #i.
+    SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i
+    & (All #k. Leak_NOsK(rNid) @ #k ==> (Ex #e. NOC_Expired(rNid) @ #e & #e < #k)) ==>
+    not (Ex #j. K(sk) @ #j)
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+lemma sk_R_leak_after_expiry_harmless:
+  "All rNid iNid fid iEphpK rEphpK sk #i.
+    SK_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & (All #k. Leak_NOsK(iNid) @ #k ==> (Ex #e. NOC_Expired(iNid) @ #e & #e < #k)) ==>
+    not (Ex #j. K(sk) @ #j)
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+// 時計の遅れによる攻撃: 期限切れ後に漏れた NOsK と IPK で、遅れた検証者になりすませる（-D=LKGT -D=SEARCH_EXP）
+lemma attack_expired_key_I_R:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK rRand th2 #i #e #k #k1.
+    Commit_I(iNid, rNid, fid, <iEphpK, rEphpK, rRand, th2>) @ #i
+    & not (Ex #j. Running_R_Sigma2(rNid, <iEphpK, rEphpK, rRand, th2>) @ #j)
+    & NOC_Expired(rNid) @ #e & Leak_NOsK(rNid) @ #k & #e < #k & #k < #i
+    & not (Ex #k2. Leak_NOsK(rNid) @ #k2 & #k2 < #e)
+    & Leak_IPK(fid) @ #k1
+    & not (Ex #l. Leak_NOsK(iNid) @ #l)
+    & not (Ex p #l. Leak_Eph(p) @ #l)
+    & not (Ex a b c #l. Eph_R(a, b, c) @ #l)"
+
+lemma attack_expired_key_R_I:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #e #k #k1.
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & not (Ex #j. Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j)
+    & NOC_Expired(iNid) @ #e & Leak_NOsK(iNid) @ #k & #e < #k & #k < #i
+    & not (Ex #k2. Leak_NOsK(iNid) @ #k2 & #k2 < #e)
+    & Leak_IPK(fid) @ #k1
+    & not (Ex #l. Leak_NOsK(rNid) @ #l)
+    & not (Ex p #l. Leak_Eph(p) @ #l)
+    & not (Ex a b c #l. Eph_I(a, b, c) @ #l)"
+
+lemma attack_expired_key_sk_I:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK sk #i #j #e #k #k1.
+    SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i & K(sk) @ #j
+    & NOC_Expired(rNid) @ #e & Leak_NOsK(rNid) @ #k & #e < #k & #k < #i
+    & not (Ex #k2. Leak_NOsK(rNid) @ #k2 & #k2 < #e)
+    & Leak_IPK(fid) @ #k1
+    & not (Ex #l. Leak_NOsK(iNid) @ #l)
+    & not (Ex p #l. Leak_Eph(p) @ #l)
+    & not (Ex a b c #l. Eph_R(a, b, c) @ #l)"
+
+lemma attack_expired_key_sk_R:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #j #e #k #k1.
+    SK_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i & K(sk) @ #j
+    & NOC_Expired(iNid) @ #e & Leak_NOsK(iNid) @ #k & #e < #k & #k < #i
+    & not (Ex #k2. Leak_NOsK(iNid) @ #k2 & #k2 < #e)
+    & Leak_IPK(fid) @ #k1
+    & not (Ex #l. Leak_NOsK(rNid) @ #l)
+    & not (Ex p #l. Leak_Eph(p) @ #l)
+    & not (Ex a b c #l. Eph_I(a, b, c) @ #l)"
+
+#ifdef LKGT
+
+// 時計が追いついた後は期限切れの NOC を受け入れない
+lemma lkgt_safe_after_clock_catchup_R:
+  "All rNid iNid fid iEphpK rEphpK sk #i #k.
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & KnowsExpired(rNid, iNid) @ #k ==> #i < #k"
+
+lemma lkgt_safe_after_clock_catchup_I:
+  "All iNid rNid fid data #i #k.
+    Commit_I(iNid, rNid, fid, data) @ #i
+    & KnowsExpired(iNid, rNid) @ #k ==> #i < #k"
+#endif
+
+end

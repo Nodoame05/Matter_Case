@@ -1,0 +1,29 @@
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.12.0
+Maude version 3.5.1
+Git revision: UNKNOWN, branch: UNKNOWN
+Compiled at: 2026-03-08 10:05:47.616272992 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: case_i_r_secrecy_Eph.spthy
+
+  processing time: 5.83s
+  
+  i_secrecy_Eph (all-traces): falsified - found trace (6 steps)
+  i_secrecy_Eph_not_Leak_iEph (all-traces): verified (6 steps)
+  i_secrecy_Eph_not_Leak_ownNOsK (all-traces): falsified - found trace (6 steps)
+  i_secrecy_Eph_not_Leak_all (all-traces): verified (6 steps)
+  r_secrecy_Eph (all-traces): falsified - found trace (8 steps)
+  r_secrecy_Eph_not_Leak_rEph (all-traces): verified (5 steps)
+  r_secrecy_Eph_not_Leak_ownNOsK (all-traces): falsified - found trace (8 steps)
+  r_secrecy_Eph_not_Leak_all (all-traces): verified (5 steps)
+
+==============================================================================

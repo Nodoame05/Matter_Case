@@ -1,0 +1,53 @@
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.12.0
+Maude version 3.5.1
+Git revision: UNKNOWN, branch: UNKNOWN
+Compiled at: 2026-03-08 10:05:47.616272992 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: case_r_secrecy_sk.spthy
+
+  processing time: 1594.61s
+  
+  r_secrecy_sk (all-traces): falsified - found trace (32 steps)
+  r_secrecy_sk_not_Leak_peerNOsK (all-traces): falsified - found trace (19 steps)
+  r_secrecy_sk_not_Leak_ownNOsK (all-traces): falsified - found trace (32 steps)
+  r_secrecy_sk_not_Leak_iEph (all-traces): falsified - found trace (32 steps)
+  r_secrecy_sk_not_Leak_rEph (all-traces): falsified - found trace (32 steps)
+  r_secrecy_sk_not_Leak_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_ownNOsK (all-traces): falsified - found trace (19 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_iEph (all-traces): falsified - found trace (19 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_rEph (all-traces): falsified - found trace (19 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_ownNOsK_iEph (all-traces): falsified - found trace (32 steps)
+  r_secrecy_sk_not_Leak_ownNOsK_rEph (all-traces): falsified - found trace (32 steps)
+  r_secrecy_sk_not_Leak_ownNOsK_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_iEph_rEph (all-traces): falsified - found trace (32 steps)
+  r_secrecy_sk_not_Leak_iEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_rEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_ownNOsK_iEph (all-traces): falsified - found trace (19 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_ownNOsK_rEph (all-traces): falsified - found trace (19 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_ownNOsK_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_iEph_rEph (all-traces): verified (119 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_iEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_rEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_ownNOsK_iEph_rEph (all-traces): falsified - found trace (32 steps)
+  r_secrecy_sk_not_Leak_ownNOsK_iEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_ownNOsK_rEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_iEph_rEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_ownNOsK_iEph_rEph (all-traces): verified (119 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_ownNOsK_iEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_ownNOsK_rEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_peerNOsK_iEph_rEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_ownNOsK_iEph_rEph_IPK (all-traces): verified (13 steps)
+  r_secrecy_sk_not_Leak_all (all-traces): verified (13 steps)
+
+==============================================================================

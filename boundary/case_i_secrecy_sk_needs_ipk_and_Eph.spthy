@@ -1,0 +1,499 @@
+theory MatterCASE
+begin
+
+builtins: diffie-hellman, signing, hashing
+
+functions: hmac/2, kdf/3, aead_enc/4, aead_dec/4
+
+equations:
+  aead_dec(k, aead_enc(k, m, a, n), a, n) = m
+
+rule Fabric_Setup:
+  [
+    Fr(~rootSk), Fr(~fid), Fr(~ipk)
+  ]--[
+    FabricCreated(~fid) ]->
+  [
+    !Fabric(~fid, pk(~rootSk), ~ipk),
+    !RootSk(~fid, ~rootSk),
+    Out(<~fid, pk(~rootSk)>)
+  ]
+
+rule Node_Commission:
+  let
+    body = <~nid, ~fid, pk(~NOsK)>
+    noc  = <body, sign(body, rootSk)>
+  in
+  [
+    !RootSk(~fid, rootSk), Fr(~nid), Fr(~NOsK)
+  ]--[
+    NodeCommissioned(~nid, ~fid)
+  ]->[
+    !NOsK(~nid, ~fid, ~NOsK, noc),
+    !NodeInfo(~nid, ~fid),
+    Out(noc)
+  ]
+
+rule Expire_NOC:
+  [
+    !NOsK(nid, fid, NOsK, noc)
+  ]--[
+    Expired(nid)
+  ]->[ ]
+
+rule NOsK_Leak:
+  [
+    !NOsK(nid, fid, NOsK, noc)
+  ]--[
+    Leak_NOsK(nid)
+  ]->[
+    Out(NOsK)
+  ]
+
+rule IPK_Leak:
+  [
+    !Fabric(fid, rootPk, ipk)
+  ]--[
+    Leak_IPK(fid)
+  ]->[
+    Out(ipk)
+  ]
+
+rule iEphsk_Leak:
+  [
+    !I_Eph(iNid, iEphpK, ~iEphsK)
+  ]--[
+    Leak_iEphsk(iNid, iEphpK),
+    Leak_Eph(iEphpK)
+  ]->[
+    Out(~iEphsK)
+  ]
+
+rule rEphsk_Leak:
+  [
+    !R_Eph(rNid, rEphpK, ~rEphsK)
+  ]--[
+    Leak_rEphsk(rNid, rEphpK),
+    Leak_Eph(rEphpK)
+  ]->[
+    Out(~rEphsK)
+  ]
+
+rule I_Sigma1:
+  let
+    iEphpK = 'g'^~iEphsK
+    destId = hmac(ipk, <~iRand, rootPk, ~fid, rNid>)
+    Msg1 = <'Sigma1', ~iRand, ~iSid, destId, iEphpK, 'noResumption'>
+  in
+  [
+    !NOsK(iNid, ~fid, iNOsK, nocI),
+    !NodeInfo(rNid, ~fid),
+    !Fabric(~fid, rootPk, ipk),
+    Fr(~iEphsK), Fr(~iRand), Fr(~iSid)
+  ]--[
+    I_Sent1(iNid, rNid, destId),
+    Eph_I(iNid, iEphpK, ~iEphsK),
+    UseValid(iNid)
+  ]->[
+    I_St1(iNid, rNid, ~fid, ~iEphsK, Msg1),
+    !I_Eph(iNid, iEphpK, ~iEphsK),
+    Out(Msg1)
+  ]
+
+rule R_Sigma2:
+  let
+    destId = hmac(ipk, <iRand, rootPk, ~fid, rNid>)
+    Msg1   = <'Sigma1', iRand, iSid, destId, iEphpK, 'noResumption'>
+    rEphpK = 'g'^~rEphsK
+    SS     = iEphpK^~rEphsK
+    sig2   = sign(<nocR, rEphpK, iEphpK>, rNOsK)
+    th2    = h(Msg1)
+    s2k    = kdf(SS, <ipk, ~rRand, rEphpK, th2>, 'Sigma2')
+    enc2   = aead_enc(s2k, <nocR, sig2, ~resId>, 'empty', 'NCASE_Sigma2N')
+    Msg2   = <'Sigma2', ~rRand, ~rSid, rEphpK, enc2>
+  in
+  [
+    In(Msg1),
+    !NOsK(rNid, ~fid, rNOsK, nocR),
+    !Fabric(~fid, rootPk, ipk),
+    Fr(~rEphsK),
+    Fr(~rRand),
+    Fr(~rSid),
+    Fr(~resId)
+  ]--[
+    R_ValidSigma1(rNid, ~fid, destId),
+    Running_R_Sigma2(rNid, <iEphpK, rEphpK, ~rRand, th2>),
+    Transcript_R(rNid, h(<Msg1, Msg2>)),
+    Eph_R(rNid, rEphpK, ~rEphsK),
+    UseValid(rNid)
+  ]->[
+    R_St1(rNid, ~fid, ~rEphsK, iEphpK, Msg1, Msg2, s2k, ~resId),
+    !R_Eph(rNid, rEphpK, ~rEphsK),
+    Out(Msg2)
+  ]
+
+rule I_Sigma3:
+  let
+    iEphpK = 'g'^~iEphsK
+    SS     = rEphpK^~iEphsK
+    th2    = h(Msg1)
+    s2k    = kdf(SS, <ipk, rRand, rEphpK, th2>, 'Sigma2')
+    bodyR  = <rNid, ~fid, pkR>
+    nocR   = <bodyR, certSigR>
+    enc2   = aead_enc(s2k, <nocR, sig2, resId>, 'empty', 'NCASE_Sigma2N')
+    Msg2   = <'Sigma2', rRand, rSid, rEphpK, enc2>
+    sig3   = sign(<nocI, iEphpK, rEphpK>, iNOsK)
+    th3    = h(<Msg1, Msg2>)
+    s3k    = kdf(SS, <ipk, th3>, 'Sigma3')
+    enc3   = aead_enc(s3k, <nocI, sig3>, 'empty', 'NCASE_Sigma3N')
+    Msg3   = <'Sigma3', enc3>
+    sk     = kdf(SS, <ipk, h(<Msg1, Msg2, Msg3>)>, 'SessionKeys')
+  in
+  [
+    I_St1(iNid, rNid, ~fid, ~iEphsK, Msg1),
+    In(Msg2),
+    !NOsK(iNid, ~fid, iNOsK, nocI),
+    !Fabric(~fid, rootPk, ipk)
+  ]--[
+    Eq(verify(certSigR, bodyR, rootPk), true),
+    Eq(verify(sig2, <nocR, rEphpK, iEphpK>, pkR), true),
+    Commit_I(iNid, rNid, ~fid, <iEphpK, rEphpK, rRand, th2>),
+    Running_I(iNid, rNid, ~fid, iEphpK, rEphpK, sk),
+    Transcript_I(iNid, rNid, th3),
+    SS_I(iNid, rNid, ~fid, iEphpK, rEphpK, SS),
+    SK_I(iNid, rNid, ~fid, iEphpK, rEphpK, sk),
+    UseValid(iNid),
+    UseValid(rNid)
+  ]->[
+    I_ResSt(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId),
+    Out(Msg3)
+  ]
+
+rule R_Finish:
+  let
+    rEphpK = 'g'^~rEphsK
+    SS     = iEphpK^~rEphsK
+    th3    = h(<Msg1, Msg2>)
+    s3k    = kdf(SS, <ipk, th3>, 'Sigma3')
+    bodyI  = <iNid, ~fid, pkI>
+    nocI   = <bodyI, certSigI>
+    enc3   = aead_enc(s3k, <nocI, sig3>, 'empty', 'NCASE_Sigma3N')
+    Msg3   = <'Sigma3', enc3>
+    sk     = kdf(SS, <ipk, h(<Msg1, Msg2, Msg3>)>, 'SessionKeys')
+  in
+  [
+    R_St1(rNid, ~fid, ~rEphsK, iEphpK, Msg1, Msg2, s2k, ~resId),
+    In(Msg3),
+    !Fabric(~fid, rootPk, ipk)
+  ]--[
+    Eq(verify(certSigI, bodyI, rootPk), true),
+    Eq(verify(sig3, <nocI, iEphpK, rEphpK>, pkI), true),
+    Commit_R(rNid, iNid, ~fid, iEphpK, rEphpK, sk),
+    SS_R(rNid, iNid, ~fid, iEphpK, rEphpK, SS),
+    SK_R(rNid, iNid, ~fid, iEphpK, rEphpK, sk),
+    UseValid(iNid)
+  ]->[
+    R_ResSt(rNid, iNid, ~fid, iEphpK, rEphpK, SS, ~resId)
+  ]
+
+restriction Equality:
+  "All x y #i. Eq(x, y) @ #i ==> x = y"
+
+#ifdef SEARCH
+// exists-trace の attack_* 専用。all-traces の lemma には付けない（verified が証明にならない）
+
+restriction search_one_fabric:
+  "All f1 f2 #i #j. FabricCreated(f1) @ #i & FabricCreated(f2) @ #j ==> #i = #j"
+restriction search_one_initiator_session:
+  "All a b c d e f #i #j. Eph_I(a, b, c) @ #i & Eph_I(d, e, f) @ #j ==> #i = #j"
+restriction search_one_responder_session:
+  "All a b c d e f #i #j. Eph_R(a, b, c) @ #i & Eph_R(d, e, f) @ #j ==> #i = #j"
+restriction search_two_nodes:
+  "All a b c fa fb fc #i #j #k. NodeCommissioned(a, fa) @ #i & NodeCommissioned(b, fb) @ #j & NodeCommissioned(c, fc) @ #k
+   ==> #i = #j | #j = #k | #i = #k"
+restriction search_no_expiry:
+  "All n #i. Expired(n) @ #i ==> F"
+#endif
+
+restriction not_use_after_expiry:
+  "All nid #i #j. Expired(nid) @ #i & UseValid(nid) @ #j ==> #j < #i"
+
+// 必要十分条件をまとめた境界
+lemma i_secrecy_sk_needs_ipk_and_Eph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+   | ( (Ex #k. Leak_IPK(fid) @ #k)
+     & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+       | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+// 例外（漏洩）を AND でつないだ全組合せ。verified なら S の漏洩はすべて攻撃に必要
+lemma i_secrecy_sk_needs_peerNOsK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i) )
+  "
+
+lemma i_secrecy_sk_needs_ownNOsK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i) )
+  "
+
+lemma i_secrecy_sk_needs_iEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #l. Leak_Eph(iEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_rEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #l. Leak_Eph(rEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_ownNOsK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_iEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_rEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_ownNOsK_iEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_ownNOsK_rEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_ownNOsK_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_iEph_rEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_iEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_rEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #l. Leak_Eph(rEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_ownNOsK_iEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_ownNOsK_rEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_ownNOsK_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_iEph_rEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_iEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_rEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_ownNOsK_iEph_rEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_ownNOsK_iEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_ownNOsK_rEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_iEph_rEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_ownNOsK_iEph_rEph:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_ownNOsK_iEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_ownNOsK_rEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_peerNOsK_iEph_rEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_ownNOsK_iEph_rEph_IPK:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+lemma i_secrecy_sk_needs_all:
+  "All iNid rNid fid iEphpK rEphpK sk #i. SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i ==>
+   not (Ex #j. K(sk) @ #j)
+   | ( (Ex #k. Leak_NOsK(rNid) @ #k & #k < #i)
+     & (Ex #k. Leak_NOsK(iNid) @ #k & #k < #i)
+     & (Ex #l. Leak_Eph(iEphpK) @ #l)
+     & (Ex #l. Leak_Eph(rEphpK) @ #l)
+     & (Ex #l. Leak_IPK(fid) @ #l) )
+  "
+
+// 最小攻撃集合（IPK ともう 1 つだけ）で性質が破れるトレース。TIMEOUT の all-traces lemma の反例に使う
+lemma attack_i_sk_by_IPK_peerNOsK:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK sk #i #j #k1 #k2.
+     SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i
+     & K(sk) @ #j
+     & Leak_IPK(fid) @ #k1
+     & Leak_NOsK(rNid) @ #k2 & #k2 < #i
+     & not (Ex #l. Leak_NOsK(iNid) @ #l)
+     & not (Ex q #l. Leak_Eph(q) @ #l)
+     & not (Ex a b c #l. Eph_R(a, b, c) @ #l)"
+
+lemma attack_i_sk_by_IPK_iEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK sk #i #j #k1 #k2.
+     SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i
+     & K(sk) @ #j
+     & Leak_IPK(fid) @ #k1
+     & Leak_Eph(iEphpK) @ #k2
+     & not (Ex n #l. Leak_NOsK(n) @ #l)
+     & not (Ex #l. Leak_Eph(rEphpK) @ #l)"
+
+lemma attack_i_sk_by_IPK_rEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK sk #i #j #k1 #k2.
+     SK_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #i
+     & K(sk) @ #j
+     & Leak_IPK(fid) @ #k1
+     & Leak_Eph(rEphpK) @ #k2
+     & not (Ex n #l. Leak_NOsK(n) @ #l)
+     & not (Ex #l. Leak_Eph(iEphpK) @ #l)"
+
+end

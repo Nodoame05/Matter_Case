@@ -1,0 +1,32 @@
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.12.0
+Maude version 3.5.1
+Git revision: UNKNOWN, branch: UNKNOWN
+Compiled at: 2026-03-08 10:05:47.616272992 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: resumption_only.spthy
+
+  processing time: 11.26s
+  
+  resumption_finished (exists-trace): verified (12 steps)
+  resumption_boundary_rsk_R (all-traces): verified (12 steps)
+  resumption_boundary_rsk_I (all-traces): verified (10 steps)
+  resumption_attack_rsk_R_iEph (exists-trace): verified (16 steps)
+  resumption_attack_rsk_R_rEph (exists-trace): verified (16 steps)
+  resumption_attack_rsk_I_iEph (exists-trace): verified (11 steps)
+  resumption_attack_rsk_I_rEph (exists-trace): verified (11 steps)
+  resumption_rsk_needs_IPK_R (all-traces): falsified - found trace (16 steps)
+  resumption_rsk_needs_IPK_I (all-traces): falsified - found trace (11 steps)
+  auth_R_resume (all-traces): verified (26 steps)
+  auth_I_resume (all-traces): verified (12 steps)
+
+==============================================================================

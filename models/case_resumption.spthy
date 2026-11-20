@@ -1,0 +1,253 @@
+theory MatterCASEResumptionOnly
+begin
+
+// CASE 本体は CASE_I_Start / CASE_R_Done / CASE_I_Done の3ルールに抽象化している
+
+builtins: diffie-hellman, hashing, signing
+
+functions: hmac/2, kdf/3, aead_enc/4, aead_dec/4
+equations:
+  aead_dec(k, aead_enc(k, m, a, n), a, n) = m
+
+rule Fabric_Setup:
+  [
+    Fr(~fid),
+    Fr(~ipk),
+    Fr(~rootSk)
+  ]--[
+    FabricCreated(~fid)
+  ]->[
+    !Fabric(~fid, pk(~rootSk), ~ipk),
+    Out(<~fid, pk(~rootSk)>)
+  ]
+
+rule Node:
+  [
+    !Fabric(~fid, rootPk, ipk),
+    Fr(~nid)
+  ]-->[
+    !Node(~nid, ~fid),
+    Out(~nid)
+  ]
+
+rule IPK_Leak:
+  [
+    !Fabric(fid, rootPk, ipk)
+  ]--[
+    Leak_IPK(fid)
+  ]->[
+    Out(ipk)
+  ]
+
+rule Eph_Leak:
+  [
+    !Eph(Nid, Ephpk, Ephsk)
+  ]--[
+    Leak_Eph(Ephpk)
+  ]->[
+    Out(Ephsk)
+  ]
+
+rule CASE_I_Start:
+  let
+    iEphpK = 'g'^~iEphsK
+  in
+  [
+    !Node(iNid, ~fid),
+    !Node(rNid, ~fid),
+    Fr(~iEphsK)
+  ]-->[
+    I_Status(iNid, rNid, ~fid, ~iEphsK),
+    CaseStart(iNid, rNid, ~fid, iEphpK),
+    !Eph(iNid, iEphpK, ~iEphsK),
+    Out(iEphpK)
+  ]
+
+rule CASE_R_Done:
+  let
+    rEphpK = 'g'^~rEphsK
+    SS  = iEphpK^~rEphsK
+  in
+  [
+    In(iEphpK),
+    CaseStart(iNid, rNid, ~fid, iEphpK),
+    !Fabric(~fid, rootPk, ipk),
+    Fr(~rEphsK),
+    Fr(~resId)
+  ]-->[
+    CaseEnd(iNid, rNid, ~fid, rEphpK, ~resId),
+    R_ResSt(rNid, iNid, ~fid, iEphpK, rEphpK, SS, ~resId),
+    !Eph(rNid, rEphpK, ~rEphsK),
+    Out(rEphpK)
+  ]
+
+rule CASE_I_Done:
+  let
+    SS  = rEphpK^~iEphsK
+    iEphpK = 'g'^~iEphsK
+  in
+  [
+    I_Status(iNid, rNid, ~fid, ~iEphsK),
+    CaseEnd(iNid, rNid, ~fid, rEphpK, ~resId),
+    !Fabric(~fid, rootPk, ipk)
+  ]--[
+    CASEDone(iNid, rNid, ~fid, 'g'^~iEphsK, rEphpK)
+  ]->[
+    I_ResSt(iNid, rNid, ~fid, iEphpK, rEphpK, SS, ~resId)
+  ]
+
+rule resume_I_Sigma1:
+  let
+    resiEphpK = 'g'^~resiEphsK
+    destId = hmac(ipk, <~resIRand, rootPk, ~fid, rNid>)
+    S1RK = kdf(SS, <~resIRand, ~resId>, 'Sigma1_Resume')
+    Res1MIC = aead_enc(S1RK, 'empty', 'empty', 'NCASE_SigmaS1')
+    res_Msg1 = <'Sigma1', ~resIRand, ~resISid, destId, resiEphpK, ~resId, Res1MIC>
+  in
+  [
+    I_ResSt(iNid, rNid, ~fid, iEphpK, rEphpK, SS, ~resId),
+    Fr(~resiEphsK),
+    Fr(~resIRand),
+    Fr(~resISid),
+    !Fabric(~fid, rootPk, ipk)
+  ]--[
+    ResumeStart_I(iNid, rNid, ~resIRand)
+  ]->[
+    I_ResSt2(iNid, rNid, ~fid, iEphpK, rEphpK, SS, ~resIRand, ~resISid, ~resiEphsK),
+    Out(res_Msg1)
+  ]
+
+rule resume_R_Sigma2:
+  let
+    S1RK = kdf(SS, <resIRand, ~resId>, 'Sigma1_Resume')
+    Res1MIC = aead_enc(S1RK, 'empty', 'empty', 'NCASE_SigmaS1')
+    destId = hmac(ipk, <resIRand, rootPk, ~fid, rNid>)
+    res_Msg1 = <'Sigma1', resIRand, resISid, destId, resEphpK, ~resId, Res1MIC>
+    S2RK = kdf(SS, <resIRand, ~newResId>, 'Sigma2_Resume')
+    Res2MIC = aead_enc(S2RK, 'empty', 'empty', 'NCASE_SigmaS2')
+    res_Msg2 = <'Resume_Sigma2', ~newResId, Res2MIC, ~rSid>
+    rsk = kdf(SS, <resIRand, ~newResId>, 'SessionResumptionKeys')
+  in
+  [
+    In(res_Msg1),
+    R_ResSt(rNid, iNid, ~fid, iEphpK, rEphpK, SS, ~resId),
+    Fr(~rSid),
+    Fr(~newResId),
+    !Fabric(~fid, rootPk, ipk)
+  ]--[
+    Resumed_R(rNid, iNid, ~fid, iEphpK, rEphpK, rsk),
+    RSk_R(rNid, iNid, ~fid, iEphpK, rEphpK, rsk),
+    ResumeAccept_R(rNid, iNid, resIRand, iEphpK, rEphpK)
+  ]->[
+    Out(res_Msg2)
+  ]
+
+rule resume_I_Finish:
+  let
+    S2RK = kdf(SS, <~resIRand, newResId>, 'Sigma2_Resume')
+    Res2MIC = aead_enc(S2RK, 'empty', 'empty', 'NCASE_SigmaS2')
+    res_Msg2 = <'Resume_Sigma2', newResId, Res2MIC, rSid>
+    rsk = kdf(SS, <~resIRand, newResId>, 'SessionResumptionKeys')
+  in
+  [
+    In(res_Msg2),
+    I_ResSt2(iNid, rNid, ~fid, iEphpK, rEphpK, SS, ~resIRand, ~resISid, ~resiEphsK)
+  ]--[
+    Resumed_I(iNid, rNid, ~fid, iEphpK, rEphpK, rsk),
+    RSK_I(iNid, rNid, ~fid, iEphpK, rEphpK, rsk)
+  ]->[ ]
+
+// 実行可能性: 漏洩なしで Resumption が完了する
+lemma resumption_finished:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK rsk #i #j.
+   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
+   & Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #j & #j < #i
+   & not (Ex f #k. Leak_IPK(f) @ #k)
+   & not (Ex p #k. Leak_Eph(p) @ #k)"
+
+// 再開鍵 rsk: 破れる ⇒ iEph ∨ rEph（rsk に IPK が入らないため、IPK は不要）
+lemma resumption_boundary_rsk_R:
+  "All rNid iNid fid iEphpK rEphpK rsk #i.
+   Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+   not (Ex #j. K(rsk) @ #j)
+   | (Ex #l. Leak_Eph(iEphpK) @ #l)
+   | (Ex #l. Leak_Eph(rEphpK) @ #l)"
+
+lemma resumption_boundary_rsk_I:
+  "All iNid rNid fid iEphpK rEphpK rsk #i.
+   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+   not (Ex #j. K(rsk) @ #j)
+   | (Ex #l. Leak_Eph(iEphpK) @ #l)
+   | (Ex #l. Leak_Eph(rEphpK) @ #l)"
+
+// 最小攻撃: エフェメラル鍵 1 つの漏洩だけで rsk が知られる
+lemma resumption_attack_rsk_R_iEph:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK rsk #i #j #k.
+   Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i
+   & K(rsk) @ #j
+   & Leak_Eph(iEphpK) @ #k
+   & not (Ex #l. Leak_Eph(rEphpK) @ #l)
+   & not (Ex f #l. Leak_IPK(f) @ #l)"
+
+lemma resumption_attack_rsk_R_rEph:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK rsk #i #j #k.
+   Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i
+   & K(rsk) @ #j
+   & Leak_Eph(rEphpK) @ #k
+   & not (Ex #l. Leak_Eph(iEphpK) @ #l)
+   & not (Ex f #l. Leak_IPK(f) @ #l)"
+
+lemma resumption_attack_rsk_I_iEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK rsk #i #j #k.
+   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
+   & K(rsk) @ #j
+   & Leak_Eph(iEphpK) @ #k
+   & not (Ex #l. Leak_Eph(rEphpK) @ #l)
+   & not (Ex f #l. Leak_IPK(f) @ #l)"
+
+lemma resumption_attack_rsk_I_rEph:
+  exists-trace
+  "Ex iNid rNid fid iEphpK rEphpK rsk #i #j #k.
+   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
+   & K(rsk) @ #j
+   & Leak_Eph(rEphpK) @ #k
+   & not (Ex #l. Leak_Eph(iEphpK) @ #l)
+   & not (Ex f #l. Leak_IPK(f) @ #l)"
+
+// CASE の sk と同じ境界（IPK が必要）は成り立たない: falsified が期待される結果
+lemma resumption_rsk_needs_IPK_R:
+  "All rNid iNid fid iEphpK rEphpK rsk #i.
+   Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+   not (Ex #j. K(rsk) @ #j)
+   | ( (Ex #l. Leak_IPK(fid) @ #l)
+     & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+       | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+lemma resumption_rsk_needs_IPK_I:
+  "All iNid rNid fid iEphpK rEphpK rsk #i.
+   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+   not (Ex #j. K(rsk) @ #j)
+   | ( (Ex #l. Leak_IPK(fid) @ #l)
+     & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+       | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+
+// 認証: エフェメラル鍵が漏れない限り、相手が対応する再開動作をしている
+lemma auth_R_resume:
+  "All rNid iNid resIRand iEphpK rEphpK #i.
+   ResumeAccept_R(rNid, iNid, resIRand, iEphpK, rEphpK) @ #i ==>
+   (Ex #j. ResumeStart_I(iNid, rNid, resIRand) @ #j & #j < #i)
+   | (Ex #l. Leak_Eph(iEphpK) @ #l)
+   | (Ex #l. Leak_Eph(rEphpK) @ #l)"
+
+lemma auth_I_resume:
+  "All iNid rNid fid iEphpK rEphpK rsk #i.
+   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+   (Ex #j. Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #j & #j < #i)
+   | (Ex #l. Leak_Eph(iEphpK) @ #l)
+   | (Ex #l. Leak_Eph(rEphpK) @ #l)"
+
+end
