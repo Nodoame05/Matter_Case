@@ -2,7 +2,7 @@ theory MatterCASE
 begin
 
 /*
- * 1 lemma ずつ実行: tamarin-prover --derivcheck-timeout=0 --prove=<lemma> models/case.spthy
+ * 1 lemma ずつ実行: tamarin-prover --derivcheck-timeout=60 --prove=<lemma> models/case.spthy
  *   attack_*          : -D=SEARCH
  *   expiry_executable, attack_expired_key_* : -D=SEARCH_EXP
  *   時計が遅れる場合  : -D=LKGT を追加
