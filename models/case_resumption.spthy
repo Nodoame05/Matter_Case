@@ -139,6 +139,7 @@ rule resume_R_Sigma2:
     RSk_R(rNid, iNid, ~fid, iEphpK, rEphpK, rsk),
     ResumeAccept_R(rNid, iNid, resIRand, iEphpK, rEphpK)
   ]->[
+    R_ResSt2(rNid, iNid, ~fid, iEphpK, rEphpK, rsk),
     Out(res_Msg2)
   ]
 
@@ -155,99 +156,119 @@ rule resume_I_Finish:
   ]--[
     Resumed_I(iNid, rNid, ~fid, iEphpK, rEphpK, rsk),
     RSK_I(iNid, rNid, ~fid, iEphpK, rEphpK, rsk)
+  ]->[
+    Out(<'StatusReport', 'SUCCESS', 'SECURE_CHANNEL', 'SESSION_ESTABLISHMENT_SUCCESS'>)
+  ]
+
+// SigmaFinished（StatusReport）を受け取って再開を確立。平文・完全性保護なし
+rule resume_R_Finished:
+  [
+    R_ResSt2(rNid, iNid, ~fid, iEphpK, rEphpK, rsk),
+    In(<'StatusReport', 'SUCCESS', 'SECURE_CHANNEL', 'SESSION_ESTABLISHMENT_SUCCESS'>)
+  ]--[
+    ResumeEstablished_R(rNid, iNid, ~fid, iEphpK, rEphpK, rsk)
   ]->[ ]
 
 // 実行可能性: 漏洩なしで Resumption が完了する
 lemma resumption_finished:
   exists-trace
   "Ex rNid iNid fid iEphpK rEphpK rsk #i #j.
-   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
-   & Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #j & #j < #i
-   & not (Ex f #k. Leak_IPK(f) @ #k)
-   & not (Ex p #k. Leak_Eph(p) @ #k)"
+    Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
+    & Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #j & #j < #i
+    & not (Ex f #k. Leak_IPK(f) @ #k)
+    & not (Ex p #k. Leak_Eph(p) @ #k)"
+
+// SigmaFinished まで含めた実行可能性: I が再開を完了し、R が SigmaFinished を受け取って確立する
+lemma resumption_finished_sigmafinished:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK rsk #i #j.
+    Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
+    & ResumeEstablished_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #j & #i < #j
+    & not (Ex f #k. Leak_IPK(f) @ #k)
+    & not (Ex p #k. Leak_Eph(p) @ #k)"
 
 // 再開鍵 rsk: 破れる ⇒ iEph ∨ rEph（rsk に IPK が入らないため、IPK は不要）
 lemma resumption_boundary_rsk_R:
   "All rNid iNid fid iEphpK rEphpK rsk #i.
-   Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
-   not (Ex #j. K(rsk) @ #j)
-   | (Ex #l. Leak_Eph(iEphpK) @ #l)
-   | (Ex #l. Leak_Eph(rEphpK) @ #l)"
+    Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+    not (Ex #j. K(rsk) @ #j)
+    | (Ex #l. Leak_Eph(iEphpK) @ #l)
+    | (Ex #l. Leak_Eph(rEphpK) @ #l)"
 
 lemma resumption_boundary_rsk_I:
   "All iNid rNid fid iEphpK rEphpK rsk #i.
-   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
-   not (Ex #j. K(rsk) @ #j)
-   | (Ex #l. Leak_Eph(iEphpK) @ #l)
-   | (Ex #l. Leak_Eph(rEphpK) @ #l)"
+    Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+    not (Ex #j. K(rsk) @ #j)
+    | (Ex #l. Leak_Eph(iEphpK) @ #l)
+    | (Ex #l. Leak_Eph(rEphpK) @ #l)"
 
 // 最小攻撃: エフェメラル鍵 1 つの漏洩だけで rsk が知られる
 lemma resumption_attack_rsk_R_iEph:
   exists-trace
   "Ex rNid iNid fid iEphpK rEphpK rsk #i #j #k.
-   Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i
-   & K(rsk) @ #j
-   & Leak_Eph(iEphpK) @ #k
-   & not (Ex #l. Leak_Eph(rEphpK) @ #l)
-   & not (Ex f #l. Leak_IPK(f) @ #l)"
+    Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i
+    & K(rsk) @ #j
+    & Leak_Eph(iEphpK) @ #k
+    & not (Ex #l. Leak_Eph(rEphpK) @ #l)
+    & not (Ex f #l. Leak_IPK(f) @ #l)"
 
 lemma resumption_attack_rsk_R_rEph:
   exists-trace
   "Ex rNid iNid fid iEphpK rEphpK rsk #i #j #k.
-   Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i
-   & K(rsk) @ #j
-   & Leak_Eph(rEphpK) @ #k
-   & not (Ex #l. Leak_Eph(iEphpK) @ #l)
-   & not (Ex f #l. Leak_IPK(f) @ #l)"
+    Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i
+    & K(rsk) @ #j
+    & Leak_Eph(rEphpK) @ #k
+    & not (Ex #l. Leak_Eph(iEphpK) @ #l)
+    & not (Ex f #l. Leak_IPK(f) @ #l)"
 
 lemma resumption_attack_rsk_I_iEph:
   exists-trace
   "Ex iNid rNid fid iEphpK rEphpK rsk #i #j #k.
-   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
-   & K(rsk) @ #j
-   & Leak_Eph(iEphpK) @ #k
-   & not (Ex #l. Leak_Eph(rEphpK) @ #l)
-   & not (Ex f #l. Leak_IPK(f) @ #l)"
+    Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
+    & K(rsk) @ #j
+    & Leak_Eph(iEphpK) @ #k
+    & not (Ex #l. Leak_Eph(rEphpK) @ #l)
+    & not (Ex f #l. Leak_IPK(f) @ #l)"
 
 lemma resumption_attack_rsk_I_rEph:
   exists-trace
   "Ex iNid rNid fid iEphpK rEphpK rsk #i #j #k.
-   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
-   & K(rsk) @ #j
-   & Leak_Eph(rEphpK) @ #k
-   & not (Ex #l. Leak_Eph(iEphpK) @ #l)
-   & not (Ex f #l. Leak_IPK(f) @ #l)"
+    Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i
+    & K(rsk) @ #j
+    & Leak_Eph(rEphpK) @ #k
+    & not (Ex #l. Leak_Eph(iEphpK) @ #l)
+    & not (Ex f #l. Leak_IPK(f) @ #l)"
 
 // CASE の sk と同じ境界（IPK が必要）は成り立たない: falsified が期待される結果
 lemma resumption_rsk_needs_IPK_R:
   "All rNid iNid fid iEphpK rEphpK rsk #i.
-   Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
-   not (Ex #j. K(rsk) @ #j)
-   | ( (Ex #l. Leak_IPK(fid) @ #l)
-     & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
-       | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+    Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+    not (Ex #j. K(rsk) @ #j)
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
 
 lemma resumption_rsk_needs_IPK_I:
   "All iNid rNid fid iEphpK rEphpK rsk #i.
-   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
-   not (Ex #j. K(rsk) @ #j)
-   | ( (Ex #l. Leak_IPK(fid) @ #l)
-     & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
-       | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
+    Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+    not (Ex #j. K(rsk) @ #j)
+    | ( (Ex #l. Leak_IPK(fid) @ #l)
+      & ( (Ex #l. Leak_Eph(iEphpK) @ #l)
+        | (Ex #l. Leak_Eph(rEphpK) @ #l) ) )"
 
 // 認証: エフェメラル鍵が漏れない限り、相手が対応する再開動作をしている
 lemma auth_R_resume:
   "All rNid iNid resIRand iEphpK rEphpK #i.
-   ResumeAccept_R(rNid, iNid, resIRand, iEphpK, rEphpK) @ #i ==>
-   (Ex #j. ResumeStart_I(iNid, rNid, resIRand) @ #j & #j < #i)
-   | (Ex #l. Leak_Eph(iEphpK) @ #l)
-   | (Ex #l. Leak_Eph(rEphpK) @ #l)"
+    ResumeAccept_R(rNid, iNid, resIRand, iEphpK, rEphpK) @ #i ==>
+    (Ex #j. ResumeStart_I(iNid, rNid, resIRand) @ #j & #j < #i)
+    | (Ex #l. Leak_Eph(iEphpK) @ #l)
+    | (Ex #l. Leak_Eph(rEphpK) @ #l)"
 
 lemma auth_I_resume:
   "All iNid rNid fid iEphpK rEphpK rsk #i.
-   Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
-   (Ex #j. Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #j & #j < #i)
-   | (Ex #l. Leak_Eph(iEphpK) @ #l)
-   | (Ex #l. Leak_Eph(rEphpK) @ #l)"
+    Resumed_I(iNid, rNid, fid, iEphpK, rEphpK, rsk) @ #i ==>
+    (Ex #j. Resumed_R(rNid, iNid, fid, iEphpK, rEphpK, rsk) @ #j & #j < #i)
+    | (Ex #l. Leak_Eph(iEphpK) @ #l)
+    | (Ex #l. Leak_Eph(rEphpK) @ #l)"
 
 end
