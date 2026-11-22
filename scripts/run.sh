@@ -1,14 +1,13 @@
 #!/bin/bash
 # models/case.spthy の lemma を 1 本ずつ実行し、結果を <ファイル名>_out.txt（タブ区切り）にまとめる
 #   ./run.sh [ファイル] [制約なしの制限秒] [探索制約つきの制限秒]
-#   環境変数: MODE=default|lkgt  ONLY=<lemma名の先頭>  RESUME=1  JSON=0  TRACE_DIR=<dir>
+#   環境変数: MODE=default|lkgt  ONLY=<lemma名の先頭>  RESUME=1  DERIVCHECK=<秒、0で無効>
 # exists-trace は探索制約つきで回すので、verified だけを採用する（falsified は「トレースなし」と表示）
 
 f=${1:-../models/case.spthy}; t1=${2:-1800}; t2=${3:-900}
 MODE=${MODE:-all}
 EXP_RE='^(expiry_|no_commit_|lkgt_|attack_expired_)|_after_expiry_'
-JSON=${JSON:-1}
-TRACE_DIR=${TRACE_DIR:-traces_$(basename "$f" .spthy)}
+DERIVCHECK=${DERIVCHECK:-60}
 
 [ -f "$f" ] || { echo "ファイルがありません: $f"; exit 1; }
 command -v tamarin-prover >/dev/null || { echo "tamarin-prover が見つかりません（PATH を確認）"; exit 1; }
@@ -18,43 +17,27 @@ out=$(basename "$f" .spthy)_out.txt
 if [ "$RESUME" = 1 ] && [ -f "$out" ]; then
   awk -F'\t' -v only="$ONLY" 'NR==1 || $4 ~ /^(verified|falsified)$/ || (only != "" && index($1, only) != 1)' "$out" > "$out.tmp" && mv "$out.tmp" "$out"
 else
-  printf 'lemma\tclock\tflags\tresult\tsteps\tsec\ttrace\n' > "$out"
+  printf 'lemma\tclock\tflags\tresult\tsteps\tsec\n' > "$out"
 fi
-[ "$JSON" = 1 ] && mkdir -p "$TRACE_DIR"
 
 lemmas=$(grep -oP '^lemma \K[A-Za-z0-9_]+' "$f")
 is_exists(){ grep -A2 -E "^lemma $1( |:|\[)" "$f" | grep -q 'exists-trace'; }
 is_exp(){ echo "$1" | grep -Eq "$EXP_RE"; }
 done_already(){ awk -F'\t' -v l="$1" -v c="$2" '$1==l && $2==c {f=1} END{exit !f}' "$out"; }
 
-has_trace(){ python3 -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("graphs") else 1)' "$1" 2>/dev/null; }
-
 prove(){
   local l=$1 t=$2; shift 2
-  local line tmp="" jopt=()
-  if [ "$JSON" = 1 ]; then tmp="$JSONFILE.tmp"; rm -f "$tmp"; jopt=(--output-json="$tmp"); fi
-  line=$(timeout "$t" tamarin-prover --derivcheck-timeout=0 "$@" "${jopt[@]}" --prove="$l" "$f" 2>&1 | grep -E "^\s+$l \(" | head -1)
+  local line
+  line=$(timeout "$t" tamarin-prover --derivcheck-timeout="$DERIVCHECK" "$@" --prove="$l" "$f" 2>&1 | grep -E "^\s+$l \(" | head -1)
   RES=$(echo "$line" | grep -oE 'verified|falsified|analysis incomplete' | head -1); RES=${RES:-TIMEOUT}
   STEPS=$(echo "$line" | grep -oP '\(\K[0-9]+(?= steps\))')
-  if [ -n "$tmp" ]; then
-    if { [ "$RES" = verified ] || [ "$RES" = falsified ]; } && [ -s "$tmp" ] && has_trace "$tmp"; then
-      mv "$tmp" "$JSONFILE"; TRACE="$JSONFILE"
-    else
-      rm -f "$tmp"
-      { [ "$RES" = verified ] || [ "$RES" = falsified ]; } && rm -f "$JSONFILE"
-      [ -f "$JSONFILE" ] && TRACE="$JSONFILE" || TRACE="-"
-    fi
-  fi
 }
 
-record(){ printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "$2" "${3:-(なし)}" "$4" "$5" "$6" "$7" | tee -a "$out"; }
+record(){ printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "$2" "${3:-(なし)}" "$4" "$5" "$6" | tee -a "$out"; }
 
 run_one(){
   local l=$1 clock=$2 s base search flags
   s=$(date +%s)
-  TRACE="-"
-  if [ "$clock" = LKGT ]; then JSONFILE="$TRACE_DIR/${l}__lkgt.json"; else JSONFILE="$TRACE_DIR/${l}__exact.json"; fi
-  rm -f "$JSONFILE"
   [ "$clock" = LKGT ] && base="-D=LKGT" || base=""
   if is_exp "$l"; then search="-D=SEARCH_EXP"; else search="-D=SEARCH"; fi
 
@@ -77,8 +60,7 @@ run_one(){
       esac
     fi
   fi
-  [ "$JSON" = 1 ] || TRACE="-"
-  record "$l" "$clock" "$(echo $flags)" "$RES" "$STEPS" "$(( $(date +%s)-s ))" "$TRACE"
+  record "$l" "$clock" "$(echo $flags)" "$RES" "$STEPS" "$(( $(date +%s)-s ))"
 }
 
 want(){ [ -z "$ONLY" ] && return 0; case "$1" in "$ONLY"*) return 0;; *) return 1;; esac; }
@@ -104,4 +86,3 @@ if [ "$MODE" = all ] || [ "$MODE" = lkgt ]; then
 fi
 
 echo "結果: $out"
-[ "$JSON" = 1 ] && echo "トレース: $TRACE_DIR/"
