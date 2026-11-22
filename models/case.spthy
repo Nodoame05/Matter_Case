@@ -191,7 +191,7 @@ rule I_Sigma3:
     UseOwn(iNid),
     UseValid(iNid, rNid)
   ]->[
-    I_ResSt(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId),
+    I_St2(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId),
     Out(Msg3)
   ]
 
@@ -219,7 +219,18 @@ rule R_Finish:
     SK_R(rNid, iNid, ~fid, iEphpK, rEphpK, sk),
     UseValid(rNid, iNid)
   ]->[
-    R_ResSt(rNid, iNid, ~fid, iEphpK, rEphpK, SS, ~resId)
+    R_ResSt(rNid, iNid, ~fid, iEphpK, rEphpK, SS, ~resId),
+    Out(<'StatusReport', 'SUCCESS', 'SECURE_CHANNEL', 'SESSION_ESTABLISHMENT_SUCCESS'>)
+  ]
+
+rule I_Finished:
+  [
+    I_St2(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId),
+    In(<'StatusReport', 'SUCCESS', 'SECURE_CHANNEL', 'SESSION_ESTABLISHMENT_SUCCESS'>)
+  ]--[
+    Established_I(iNid, rNid, ~fid, iEphpK, rEphpK)
+  ]->[
+    I_ResSt(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId)
   ]
 
 restriction Equality:
@@ -279,11 +290,21 @@ restriction searchexp_two_nodes:
 lemma case_finished:
   exists-trace
   "Ex rNid iNid fid iEphpK rEphpK sk #i #j.
-     Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
-   & Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j & #j < #i
-   & not (Ex n #k. Leak_NOsK(n) @ #k)
-   & not (Ex f #k. Leak_IPK(f) @ #k)
-   & not (Ex p #k. Leak_Eph(p) @ #k)"
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & Running_I(iNid, rNid, fid, iEphpK, rEphpK, sk) @ #j & #j < #i
+    & not (Ex n #k. Leak_NOsK(n) @ #k)
+    & not (Ex f #k. Leak_IPK(f) @ #k)
+    & not (Ex p #k. Leak_Eph(p) @ #k)"
+
+// SigmaFinished まで含めた実行可能性: 漏洩なしで R が確立し、I が SigmaFinished を受け取って確立する
+lemma case_finished_sigmafinished:
+  exists-trace
+  "Ex rNid iNid fid iEphpK rEphpK sk #i #j.
+    Commit_R(rNid, iNid, fid, iEphpK, rEphpK, sk) @ #i
+    & Established_I(iNid, rNid, fid, iEphpK, rEphpK) @ #j & #i < #j
+    & not (Ex n #k. Leak_NOsK(n) @ #k)
+    & not (Ex f #k. Leak_IPK(f) @ #k)
+    & not (Ex p #k. Leak_Eph(p) @ #k)"
 
 // エフェメラル秘密鍵: 自身の漏洩以外では知られない
 lemma boundary_eph_I:
