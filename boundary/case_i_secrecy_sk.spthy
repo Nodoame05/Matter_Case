@@ -165,7 +165,7 @@ rule I_Sigma3:
     UseValid(iNid),
     UseValid(rNid)
   ]->[
-    I_ResSt(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId),
+    I_St2(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId),
     Out(Msg3)
   ]
 
@@ -193,7 +193,19 @@ rule R_Finish:
     SK_R(rNid, iNid, ~fid, iEphpK, rEphpK, sk),
     UseValid(iNid)
   ]->[
-    R_ResSt(rNid, iNid, ~fid, iEphpK, rEphpK, SS, ~resId)
+    R_ResSt(rNid, iNid, ~fid, iEphpK, rEphpK, SS, ~resId),
+    Out(<'StatusReport', 'SUCCESS', 'SECURE_CHANNEL', 'SESSION_ESTABLISHMENT_SUCCESS'>)
+  ]
+
+// SigmaFinished（StatusReport）を受け取ってセッション確立。Unsecured Session で送られるので平文・完全性保護なし
+rule I_Finished:
+  [
+    I_St2(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId),
+    In(<'StatusReport', 'SUCCESS', 'SECURE_CHANNEL', 'SESSION_ESTABLISHMENT_SUCCESS'>)
+  ]--[
+    Established_I(iNid, rNid, ~fid, iEphpK, rEphpK)
+  ]->[
+    I_ResSt(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId)
   ]
 
 restriction Equality:
