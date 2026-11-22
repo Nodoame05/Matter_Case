@@ -1,60 +1,61 @@
 lemma	clock	flags	result	steps	sec
 case_finished	正確	-D=SEARCH	verified	16	23
-boundary_eph_I	正確	(なし)	verified	6	11
-boundary_eph_R	正確	(なし)	verified	5	12
-boundary_destId	正確	(なし)	verified	16	13
-attack_destId_IPK	正確	-D=SEARCH	verified	11	27
-boundary_SS_I	正確	(なし)	verified	860	593
-boundary_SS_R	正確	(なし)	verified	142	70
-attack_SS_I_iEph	正確	-D=SEARCH	verified	16	23
-attack_SS_I_rEph	正確	-D=SEARCH	verified	18	67
-attack_SS_I_IPK_peerNOsK	正確	-D=SEARCH	verified	22	168
-attack_SS_R_iEph	正確	-D=SEARCH	verified	18	63
-attack_SS_R_rEph	正確	-D=SEARCH	verified	19	99
-attack_SS_R_IPK_peerNOsK	正確	-D=SEARCH	verified	24	173
-boundary_sk_I	正確	(なし)	verified	854	700
-boundary_sk_R	正確	(なし)	verified	132	69
-attack_sk_I_IPK_peerNOsK	正確	-D=SEARCH	verified	25	74
-attack_sk_I_IPK_iEph	正確	-D=SEARCH	verified	21	50
-attack_sk_I_IPK_rEph	正確	-D=SEARCH	verified	23	82
-attack_sk_R_IPK_peerNOsK	正確	-D=SEARCH	verified	26	128
-attack_sk_R_IPK_iEph	正確	-D=SEARCH	verified	22	106
-attack_sk_R_IPK_rEph	正確	-D=SEARCH	verified	23	167
-forward_secrecy_sk_I	正確	(なし)	verified	847	657
-forward_secrecy_sk_R	正確	(なし)	verified	119	64
-forward_secrecy_SS_I	正確	(なし)	verified	845	505
-forward_secrecy_SS_R	正確	(なし)	verified	113	56
-boundary_auth_I_R	正確	(なし)	verified	872	569
-boundary_auth_R_I	正確	(なし)	verified	188	80
-attack_auth_I_R_IPK_peerNOsK	正確	-D=SEARCH	verified	22	147
-attack_auth_I_R_IPK_iEph	正確	-D=SEARCH	verified	25	50
-attack_auth_I_R_IPK_rEph	正確	-D=SEARCH	verified	27	86
-attack_auth_R_I_IPK_peerNOsK	正確	-D=SEARCH	verified	24	185
-attack_auth_R_I_IPK_iEph	正確	-D=SEARCH	verified	27	160
-attack_auth_R_I_IPK_rEph	正確	-D=SEARCH	verified	28	112
-expiry_executable	正確	-D=SEARCH_EXP	verified	18	27
-no_commit_after_peer_expiry_I	正確	(なし)	verified	2	6
-no_commit_after_peer_expiry_R	正確	(なし)	verified	2	5
-no_commit_after_own_expiry_I	正確	(なし)	verified	2	6
-auth_I_R_leak_after_expiry_harmless	正確	(なし)	verified	872	564
-auth_R_I_leak_after_expiry_harmless	正確	(なし)	verified	188	82
-sk_I_leak_after_expiry_harmless	正確	(なし)	verified	854	660
-sk_R_leak_after_expiry_harmless	正確	(なし)	verified	132	72
-attack_expired_key_I_R	正確	-D=SEARCH_EXP	トレースなし（探索制約の中で）	2	6
-attack_expired_key_R_I	正確	-D=SEARCH_EXP	トレースなし（探索制約の中で）	2	6
-attack_expired_key_sk_I	正確	-D=SEARCH_EXP	トレースなし（探索制約の中で）	2	6
-attack_expired_key_sk_R	正確	-D=SEARCH_EXP	トレースなし（探索制約の中で）	2	6
-expiry_executable	LKGT	-D=LKGT -D=SEARCH_EXP	verified	18	28
-no_commit_after_peer_expiry_I	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	13	18
-no_commit_after_peer_expiry_R	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	15	103
-no_commit_after_own_expiry_I	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	13	19
-auth_I_R_leak_after_expiry_harmless	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	23	47
-auth_R_I_leak_after_expiry_harmless	LKGT	-D=LKGT	TIMEOUT（証明も反例も出ず）		1800
-sk_I_leak_after_expiry_harmless	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	25	56
-sk_R_leak_after_expiry_harmless	LKGT	-D=LKGT	TIMEOUT（証明も反例も出ず）		1801
-attack_expired_key_I_R	LKGT	-D=LKGT -D=SEARCH_EXP	verified	23	41
-attack_expired_key_R_I	LKGT	-D=LKGT -D=SEARCH_EXP	verified	25	46
-attack_expired_key_sk_I	LKGT	-D=LKGT -D=SEARCH_EXP	verified	26	33
-attack_expired_key_sk_R	LKGT	-D=LKGT -D=SEARCH_EXP	verified	27	46
-lkgt_safe_after_clock_catchup_R	LKGT	-D=LKGT	verified	2	12
-lkgt_safe_after_clock_catchup_I	LKGT	-D=LKGT	verified	2	12
+case_finished_sigmafinished	正確	-D=SEARCH	verified	14	22
+boundary_eph_I	正確	(なし)	verified	6	19
+boundary_eph_R	正確	(なし)	verified	5	18
+boundary_destId	正確	(なし)	verified	16	19
+attack_destId_IPK	正確	-D=SEARCH	verified	11	23
+boundary_SS_I	正確	(なし)	verified	860	226
+boundary_SS_R	正確	(なし)	verified	142	38
+attack_SS_I_iEph	正確	-D=SEARCH	verified	16	21
+attack_SS_I_rEph	正確	-D=SEARCH	verified	18	37
+attack_SS_I_IPK_peerNOsK	正確	-D=SEARCH	verified	22	70
+attack_SS_R_iEph	正確	-D=SEARCH	verified	18	37
+attack_SS_R_rEph	正確	-D=SEARCH	verified	19	51
+attack_SS_R_IPK_peerNOsK	正確	-D=SEARCH	verified	24	75
+boundary_sk_I	正確	(なし)	verified	854	258
+boundary_sk_R	正確	(なし)	verified	132	44
+attack_sk_I_IPK_peerNOsK	正確	-D=SEARCH	verified	25	44
+attack_sk_I_IPK_iEph	正確	-D=SEARCH	verified	21	33
+attack_sk_I_IPK_rEph	正確	-D=SEARCH	verified	23	46
+attack_sk_R_IPK_peerNOsK	正確	-D=SEARCH	verified	26	64
+attack_sk_R_IPK_iEph	正確	-D=SEARCH	verified	22	57
+attack_sk_R_IPK_rEph	正確	-D=SEARCH	verified	23	82
+forward_secrecy_sk_I	正確	(なし)	verified	847	263
+forward_secrecy_sk_R	正確	(なし)	verified	119	40
+forward_secrecy_SS_I	正確	(なし)	verified	845	214
+forward_secrecy_SS_R	正確	(なし)	verified	113	36
+boundary_auth_I_R	正確	(なし)	verified	872	231
+boundary_auth_R_I	正確	(なし)	verified	188	46
+attack_auth_I_R_IPK_peerNOsK	正確	-D=SEARCH	verified	22	73
+attack_auth_I_R_IPK_iEph	正確	-D=SEARCH	verified	25	36
+attack_auth_I_R_IPK_rEph	正確	-D=SEARCH	verified	27	48
+attack_auth_R_I_IPK_peerNOsK	正確	-D=SEARCH	verified	24	83
+attack_auth_R_I_IPK_iEph	正確	-D=SEARCH	verified	27	72
+attack_auth_R_I_IPK_rEph	正確	-D=SEARCH	verified	28	57
+expiry_executable	正確	-D=SEARCH_EXP	verified	18	24
+no_commit_after_peer_expiry_I	正確	(なし)	verified	2	16
+no_commit_after_peer_expiry_R	正確	(なし)	verified	2	15
+no_commit_after_own_expiry_I	正確	(なし)	verified	2	17
+auth_I_R_leak_after_expiry_harmless	正確	(なし)	verified	872	228
+auth_R_I_leak_after_expiry_harmless	正確	(なし)	verified	188	46
+sk_I_leak_after_expiry_harmless	正確	(なし)	verified	854	264
+sk_R_leak_after_expiry_harmless	正確	(なし)	verified	132	41
+attack_expired_key_I_R	正確	-D=SEARCH_EXP	トレースなし（探索制約の中で）	2	15
+attack_expired_key_R_I	正確	-D=SEARCH_EXP	トレースなし（探索制約の中で）	2	16
+attack_expired_key_sk_I	正確	-D=SEARCH_EXP	トレースなし（探索制約の中で）	2	15
+attack_expired_key_sk_R	正確	-D=SEARCH_EXP	トレースなし（探索制約の中で）	2	16
+expiry_executable	LKGT	-D=LKGT -D=SEARCH_EXP	verified	18	24
+no_commit_after_peer_expiry_I	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	13	21
+no_commit_after_peer_expiry_R	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	15	51
+no_commit_after_own_expiry_I	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	13	21
+auth_I_R_leak_after_expiry_harmless	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	23	33
+auth_R_I_leak_after_expiry_harmless	LKGT	-D=LKGT	TIMEOUT（証明も反例も出ず）		1801
+sk_I_leak_after_expiry_harmless	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	25	35
+sk_R_leak_after_expiry_harmless	LKGT	-D=LKGT -D=SEARCH_EXP	falsified	26	874
+attack_expired_key_I_R	LKGT	-D=LKGT -D=SEARCH_EXP	verified	23	30
+attack_expired_key_R_I	LKGT	-D=LKGT -D=SEARCH_EXP	verified	25	31
+attack_expired_key_sk_I	LKGT	-D=LKGT -D=SEARCH_EXP	verified	26	26
+attack_expired_key_sk_R	LKGT	-D=LKGT -D=SEARCH_EXP	verified	27	31
+lkgt_safe_after_clock_catchup_R	LKGT	-D=LKGT	verified	2	31
+lkgt_safe_after_clock_catchup_I	LKGT	-D=LKGT	verified	2	31
