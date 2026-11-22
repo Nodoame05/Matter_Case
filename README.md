@@ -87,22 +87,22 @@ MODE=lkgt    ./run.sh    # LKGT の有効期限の lemma だけ
 
 ```sh
 # all-traces の lemma（boundary_*、forward_secrecy_* など）：制約なし
-tamarin-prover --derivcheck-timeout=0 --prove=boundary_sk_I models/case.spthy
+tamarin-prover --derivcheck-timeout=60 --prove=boundary_sk_I models/case.spthy
 
 # 攻撃トレース（attack_*、case_finished）：探索制約つき
-tamarin-prover --derivcheck-timeout=0 -D=SEARCH --prove=attack_sk_I_IPK_peerNOsK models/case.spthy
+tamarin-prover --derivcheck-timeout=60 -D=SEARCH --prove=attack_sk_I_IPK_peerNOsK models/case.spthy
 
 # 有効期限の exists-trace（expiry_executable、attack_expired_key_*）
-tamarin-prover --derivcheck-timeout=0 -D=SEARCH_EXP --prove=expiry_executable models/case.spthy
+tamarin-prover --derivcheck-timeout=60 -D=SEARCH_EXP --prove=expiry_executable models/case.spthy
 
 # 時計が遅れるモデル
-tamarin-prover --derivcheck-timeout=0 -D=LKGT -D=SEARCH_EXP --prove=attack_expired_key_R_I models/case.spthy
+tamarin-prover --derivcheck-timeout=60 -D=LKGT -D=SEARCH_EXP --prove=attack_expired_key_R_I models/case.spthy
 ```
 
 ### Resumption（`models/case_resumption.spthy`）
 
 ```sh
-tamarin-prover --prove models/case_resumption.spthy 
+tamarin-prover --derivcheck-timeout=60 --prove models/case_resumption.spthy 
 ```
 
 ### 網羅（`boundary/`）
@@ -110,10 +110,10 @@ tamarin-prover --prove models/case_resumption.spthy
 ```sh
 cd boundary
 # OR 形・AND 形の lemma（all-traces）：制約なし
-tamarin-prover --derivcheck-timeout=0 --prove=i_secrecy_sk_not_Leak_IPK case_i_secrecy_sk.spthy
+tamarin-prover --derivcheck-timeout=60 --prove=i_secrecy_sk_not_Leak_IPK case_i_secrecy_sk.spthy
 
 # attack_*（exists-trace）：探索制約つき
-tamarin-prover --derivcheck-timeout=0 -D=SEARCH --prove=attack_I_R_by_IPK_peerNOsK case_auth_I_R.spthy
+tamarin-prover --derivcheck-timeout=60 -D=SEARCH --prove=attack_I_R_by_IPK_peerNOsK case_auth_I_R.spthy
 ```
 
 lemma 名：
