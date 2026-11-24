@@ -15,7 +15,7 @@ summary of summaries:
 
 analyzed: case_i_r_secrecy_Eph.spthy
 
-  processing time: 5.83s
+  processing time: 18.63s
   
   i_secrecy_Eph (all-traces): falsified - found trace (6 steps)
   i_secrecy_Eph_not_Leak_iEph (all-traces): verified (6 steps)

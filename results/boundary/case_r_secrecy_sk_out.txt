@@ -15,7 +15,7 @@ summary of summaries:
 
 analyzed: case_r_secrecy_sk.spthy
 
-  processing time: 1594.61s
+  processing time: 1186.92s
   
   r_secrecy_sk (all-traces): falsified - found trace (32 steps)
   r_secrecy_sk_not_Leak_peerNOsK (all-traces): falsified - found trace (19 steps)

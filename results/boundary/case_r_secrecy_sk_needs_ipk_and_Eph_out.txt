@@ -1,36 +1,36 @@
-lemma	mode	result	sec
-r_secrecy_sk_needs_ipk_and_Eph	plain	verified	40
-r_secrecy_sk_needs_peerNOsK	plain	falsified	134
-r_secrecy_sk_needs_ownNOsK	plain	falsified	152
-r_secrecy_sk_needs_iEph	plain	falsified	143
-r_secrecy_sk_needs_rEph	plain	falsified	65
-r_secrecy_sk_needs_IPK	plain	verified	6
-r_secrecy_sk_needs_peerNOsK_ownNOsK	plain	falsified	173
-r_secrecy_sk_needs_peerNOsK_iEph	plain	falsified	169
-r_secrecy_sk_needs_peerNOsK_rEph	plain	falsified	123
-r_secrecy_sk_needs_peerNOsK_IPK	plain	falsified	95
-r_secrecy_sk_needs_ownNOsK_iEph	SEARCH	falsified	541
-r_secrecy_sk_needs_ownNOsK_rEph	SEARCH	falsified	473
-r_secrecy_sk_needs_ownNOsK_IPK	SEARCH	falsified	438
-r_secrecy_sk_needs_iEph_rEph	SEARCH	TIMEOUT	1200
-r_secrecy_sk_needs_iEph_IPK	SEARCH	TIMEOUT	1201
-r_secrecy_sk_needs_rEph_IPK	SEARCH	TIMEOUT	1200
-r_secrecy_sk_needs_peerNOsK_ownNOsK_iEph	plain	falsified	259
-r_secrecy_sk_needs_peerNOsK_ownNOsK_rEph	plain	falsified	204
-r_secrecy_sk_needs_peerNOsK_ownNOsK_IPK	plain	falsified	175
-r_secrecy_sk_needs_peerNOsK_iEph_rEph	plain	falsified	197
-r_secrecy_sk_needs_peerNOsK_iEph_IPK	plain	falsified	177
-r_secrecy_sk_needs_peerNOsK_rEph_IPK	plain	falsified	135
-r_secrecy_sk_needs_ownNOsK_iEph_rEph	SEARCH	falsified	566
-r_secrecy_sk_needs_ownNOsK_iEph_IPK	SEARCH	falsified	516
-r_secrecy_sk_needs_ownNOsK_rEph_IPK	SEARCH	falsified	477
-r_secrecy_sk_needs_iEph_rEph_IPK	SEARCH	TIMEOUT	1200
-r_secrecy_sk_needs_peerNOsK_ownNOsK_iEph_rEph	plain	falsified	278
-r_secrecy_sk_needs_peerNOsK_ownNOsK_iEph_IPK	plain	falsified	247
-r_secrecy_sk_needs_peerNOsK_ownNOsK_rEph_IPK	plain	falsified	201
-r_secrecy_sk_needs_peerNOsK_iEph_rEph_IPK	plain	falsified	196
-r_secrecy_sk_needs_ownNOsK_iEph_rEph_IPK	SEARCH	falsified	553
-r_secrecy_sk_needs_all	plain	falsified	279
-attack_r_sk_by_IPK_peerNOsK	SEARCH	verified	19
-attack_r_sk_by_IPK_iEph	SEARCH	verified	45
-attack_r_sk_by_IPK_rEph	SEARCH	verified	73
+lemma	clock	flags	result	steps	sec
+r_secrecy_sk_needs_ipk_and_Eph	正確	(なし)	verified	158	45
+r_secrecy_sk_needs_peerNOsK	正確	(なし)	falsified	19	139
+r_secrecy_sk_needs_ownNOsK	正確	(なし)	falsified	32	174
+r_secrecy_sk_needs_iEph	正確	(なし)	falsified	32	157
+r_secrecy_sk_needs_rEph	正確	(なし)	falsified	32	81
+r_secrecy_sk_needs_IPK	正確	(なし)	verified	13	21
+r_secrecy_sk_needs_peerNOsK_ownNOsK	正確	(なし)	falsified	20	191
+r_secrecy_sk_needs_peerNOsK_iEph	正確	(なし)	falsified	20	185
+r_secrecy_sk_needs_peerNOsK_rEph	正確	(なし)	falsified	20	134
+r_secrecy_sk_needs_peerNOsK_IPK	正確	(なし)	falsified	20	103
+r_secrecy_sk_needs_ownNOsK_iEph	正確	-D=SEARCH	falsified	25	820
+r_secrecy_sk_needs_ownNOsK_rEph	正確	-D=SEARCH	falsified	25	790
+r_secrecy_sk_needs_ownNOsK_IPK	正確	-D=SEARCH	falsified	25	745
+r_secrecy_sk_needs_iEph_rEph	正確	-D=SEARCH	TIMEOUT（証明も反例も出ず）		1501
+r_secrecy_sk_needs_iEph_IPK	正確	-D=SEARCH	TIMEOUT（証明も反例も出ず）		1500
+r_secrecy_sk_needs_rEph_IPK	正確	-D=SEARCH	TIMEOUT（証明も反例も出ず）		1501
+r_secrecy_sk_needs_peerNOsK_ownNOsK_iEph	正確	(なし)	falsified	20	281
+r_secrecy_sk_needs_peerNOsK_ownNOsK_rEph	正確	(なし)	falsified	20	233
+r_secrecy_sk_needs_peerNOsK_ownNOsK_IPK	正確	(なし)	falsified	20	211
+r_secrecy_sk_needs_peerNOsK_iEph_rEph	正確	(なし)	falsified	20	218
+r_secrecy_sk_needs_peerNOsK_iEph_IPK	正確	(なし)	falsified	20	187
+r_secrecy_sk_needs_peerNOsK_rEph_IPK	正確	(なし)	falsified	20	138
+r_secrecy_sk_needs_ownNOsK_iEph_rEph	正確	-D=SEARCH	falsified	25	870
+r_secrecy_sk_needs_ownNOsK_iEph_IPK	正確	-D=SEARCH	falsified	25	823
+r_secrecy_sk_needs_ownNOsK_rEph_IPK	正確	-D=SEARCH	falsified	25	787
+r_secrecy_sk_needs_iEph_rEph_IPK	正確	-D=SEARCH	TIMEOUT（証明も反例も出ず）		1501
+r_secrecy_sk_needs_peerNOsK_ownNOsK_iEph_rEph	正確	(なし)	falsified	20	304
+r_secrecy_sk_needs_peerNOsK_ownNOsK_iEph_IPK	正確	(なし)	falsified	20	274
+r_secrecy_sk_needs_peerNOsK_ownNOsK_rEph_IPK	正確	(なし)	falsified	20	224
+r_secrecy_sk_needs_peerNOsK_iEph_rEph_IPK	正確	(なし)	falsified	20	219
+r_secrecy_sk_needs_ownNOsK_iEph_rEph_IPK	正確	-D=SEARCH	falsified	25	871
+r_secrecy_sk_needs_all	正確	(なし)	falsified	20	307
+attack_r_sk_by_IPK_peerNOsK	正確	-D=SEARCH	verified	26	34
+attack_r_sk_by_IPK_iEph	正確	-D=SEARCH	verified	22	57
+attack_r_sk_by_IPK_rEph	正確	-D=SEARCH	verified	23	83

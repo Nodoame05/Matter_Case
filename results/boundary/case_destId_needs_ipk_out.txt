@@ -15,7 +15,7 @@ summary of summaries:
 
 analyzed: case_destId_needs_ipk.spthy
 
-  processing time: 168.83s
+  processing time: 431.92s
   
   destId_needs_ipk (all-traces): falsified - found trace (10 steps)
   destId_needs_ipk_not_Leak_IPK (all-traces): verified (16 steps)
