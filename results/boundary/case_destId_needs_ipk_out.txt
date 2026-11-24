@@ -1,37 +1,17 @@
-/* All wellformedness checks were successful. */
-
-/*
-Generated from:
-Tamarin version 1.12.0
-Maude version 3.5.1
-Git revision: UNKNOWN, branch: UNKNOWN
-Compiled at: 2026-03-08 10:05:47.616272992 UTC
-*/
-
-end
-
-==============================================================================
-summary of summaries:
-
-analyzed: case_destId_needs_ipk.spthy
-
-  processing time: 431.92s
-  
-  destId_needs_ipk (all-traces): falsified - found trace (10 steps)
-  destId_needs_ipk_not_Leak_IPK (all-traces): verified (16 steps)
-  destId_needs_ipk_not_Leak_ownNOsK (all-traces): falsified - found trace (10 steps)
-  destId_needs_ipk_not_Leak_anyNOsK (all-traces): falsified - found trace (10 steps)
-  destId_needs_ipk_not_Leak_anyEph (all-traces): falsified - found trace (10 steps)
-  destId_needs_ipk_not_Leak_IPK_ownNOsK (all-traces): verified (16 steps)
-  destId_needs_ipk_not_Leak_IPK_anyNOsK (all-traces): verified (16 steps)
-  destId_needs_ipk_not_Leak_IPK_anyEph (all-traces): verified (16 steps)
-  destId_needs_ipk_not_Leak_ownNOsK_anyNOsK (all-traces): falsified - found trace (10 steps)
-  destId_needs_ipk_not_Leak_ownNOsK_anyEph (all-traces): falsified - found trace (10 steps)
-  destId_needs_ipk_not_Leak_anyNOsK_anyEph (all-traces): falsified - found trace (10 steps)
-  destId_needs_ipk_not_Leak_IPK_ownNOsK_anyNOsK (all-traces): verified (16 steps)
-  destId_needs_ipk_not_Leak_IPK_ownNOsK_anyEph (all-traces): verified (16 steps)
-  destId_needs_ipk_not_Leak_IPK_anyNOsK_anyEph (all-traces): verified (16 steps)
-  destId_needs_ipk_not_Leak_ownNOsK_anyNOsK_anyEph (all-traces): falsified - found trace (10 steps)
-  destId_needs_ipk_not_Leak_all (all-traces): verified (16 steps)
-
-==============================================================================
+lemma	clock	flags	result	steps	sec
+destId_needs_ipk	正確	(なし)	falsified	10	76
+destId_needs_ipk_not_Leak_IPK	正確	(なし)	verified	16	20
+destId_needs_ipk_not_Leak_ownNOsK	正確	(なし)	falsified	10	68
+destId_needs_ipk_not_Leak_anyNOsK	正確	(なし)	falsified	10	63
+destId_needs_ipk_not_Leak_anyEph	正確	(なし)	falsified	10	54
+destId_needs_ipk_not_Leak_IPK_ownNOsK	正確	(なし)	verified	16	20
+destId_needs_ipk_not_Leak_IPK_anyNOsK	正確	(なし)	verified	16	20
+destId_needs_ipk_not_Leak_IPK_anyEph	正確	(なし)	verified	16	21
+destId_needs_ipk_not_Leak_ownNOsK_anyNOsK	正確	(なし)	falsified	10	62
+destId_needs_ipk_not_Leak_ownNOsK_anyEph	正確	(なし)	falsified	10	54
+destId_needs_ipk_not_Leak_anyNOsK_anyEph	正確	(なし)	falsified	10	56
+destId_needs_ipk_not_Leak_IPK_ownNOsK_anyNOsK	正確	(なし)	verified	16	23
+destId_needs_ipk_not_Leak_IPK_ownNOsK_anyEph	正確	(なし)	verified	16	23
+destId_needs_ipk_not_Leak_IPK_anyNOsK_anyEph	正確	(なし)	verified	16	23
+destId_needs_ipk_not_Leak_ownNOsK_anyNOsK_anyEph	正確	(なし)	falsified	10	55
+destId_needs_ipk_not_Leak_all	正確	(なし)	verified	16	22
