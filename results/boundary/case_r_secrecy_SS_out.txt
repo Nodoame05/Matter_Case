@@ -1,53 +1,33 @@
-/* All wellformedness checks were successful. */
-
-/*
-Generated from:
-Tamarin version 1.12.0
-Maude version 3.5.1
-Git revision: UNKNOWN, branch: UNKNOWN
-Compiled at: 2026-03-08 10:05:47.616272992 UTC
-*/
-
-end
-
-==============================================================================
-summary of summaries:
-
-analyzed: case_r_secrecy_SS.spthy
-
-  processing time: 496.05s
-  
-  r_secrecy_SS (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_ownNOsK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_iEph (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_rEph (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_ownNOsK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_iEph (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_rEph (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_ownNOsK_iEph (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_ownNOsK_rEph (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_ownNOsK_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_iEph_rEph (all-traces): falsified - found trace (30 steps)
-  r_secrecy_SS_not_Leak_iEph_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_rEph_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_iEph (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_rEph (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_iEph_rEph (all-traces): verified (113 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_iEph_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_rEph_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_ownNOsK_iEph_rEph (all-traces): falsified - found trace (30 steps)
-  r_secrecy_SS_not_Leak_ownNOsK_iEph_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_ownNOsK_rEph_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_iEph_rEph_IPK (all-traces): verified (29 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_iEph_rEph (all-traces): verified (113 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_iEph_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_rEph_IPK (all-traces): falsified - found trace (16 steps)
-  r_secrecy_SS_not_Leak_peerNOsK_iEph_rEph_IPK (all-traces): verified (29 steps)
-  r_secrecy_SS_not_Leak_ownNOsK_iEph_rEph_IPK (all-traces): verified (29 steps)
-  r_secrecy_SS_not_Leak_all (all-traces): verified (29 steps)
-
-==============================================================================
+lemma	clock	flags	result	steps	sec
+r_secrecy_SS	正確	(なし)	falsified	16	76
+r_secrecy_SS_not_Leak_peerNOsK	正確	(なし)	falsified	16	37
+r_secrecy_SS_not_Leak_ownNOsK	正確	(なし)	falsified	16	76
+r_secrecy_SS_not_Leak_iEph	正確	(なし)	falsified	16	77
+r_secrecy_SS_not_Leak_rEph	正確	(なし)	falsified	16	64
+r_secrecy_SS_not_Leak_IPK	正確	(なし)	falsified	16	32
+r_secrecy_SS_not_Leak_peerNOsK_ownNOsK	正確	(なし)	falsified	16	36
+r_secrecy_SS_not_Leak_peerNOsK_iEph	正確	(なし)	falsified	16	37
+r_secrecy_SS_not_Leak_peerNOsK_rEph	正確	(なし)	falsified	16	29
+r_secrecy_SS_not_Leak_peerNOsK_IPK	正確	(なし)	falsified	16	33
+r_secrecy_SS_not_Leak_ownNOsK_iEph	正確	(なし)	falsified	16	78
+r_secrecy_SS_not_Leak_ownNOsK_rEph	正確	(なし)	falsified	16	65
+r_secrecy_SS_not_Leak_ownNOsK_IPK	正確	(なし)	falsified	16	33
+r_secrecy_SS_not_Leak_iEph_rEph	正確	(なし)	falsified	30	154
+r_secrecy_SS_not_Leak_iEph_IPK	正確	(なし)	falsified	16	33
+r_secrecy_SS_not_Leak_rEph_IPK	正確	(なし)	falsified	16	26
+r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_iEph	正確	(なし)	falsified	16	36
+r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_rEph	正確	(なし)	falsified	16	30
+r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_IPK	正確	(なし)	falsified	16	32
+r_secrecy_SS_not_Leak_peerNOsK_iEph_rEph	正確	(なし)	verified	113	39
+r_secrecy_SS_not_Leak_peerNOsK_iEph_IPK	正確	(なし)	falsified	16	31
+r_secrecy_SS_not_Leak_peerNOsK_rEph_IPK	正確	(なし)	falsified	16	25
+r_secrecy_SS_not_Leak_ownNOsK_iEph_rEph	正確	(なし)	falsified	30	159
+r_secrecy_SS_not_Leak_ownNOsK_iEph_IPK	正確	(なし)	falsified	16	32
+r_secrecy_SS_not_Leak_ownNOsK_rEph_IPK	正確	(なし)	falsified	16	26
+r_secrecy_SS_not_Leak_iEph_rEph_IPK	正確	(なし)	verified	29	22
+r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_iEph_rEph	正確	(なし)	verified	113	38
+r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_iEph_IPK	正確	(なし)	falsified	16	33
+r_secrecy_SS_not_Leak_peerNOsK_ownNOsK_rEph_IPK	正確	(なし)	falsified	16	26
+r_secrecy_SS_not_Leak_peerNOsK_iEph_rEph_IPK	正確	(なし)	verified	29	22
+r_secrecy_SS_not_Leak_ownNOsK_iEph_rEph_IPK	正確	(なし)	verified	29	23
+r_secrecy_SS_not_Leak_all	正確	(なし)	verified	29	23
