@@ -1,53 +1,33 @@
-/* All wellformedness checks were successful. */
-
-/*
-Generated from:
-Tamarin version 1.12.0
-Maude version 3.5.1
-Git revision: UNKNOWN, branch: UNKNOWN
-Compiled at: 2026-03-08 10:05:47.616272992 UTC
-*/
-
-end
-
-==============================================================================
-summary of summaries:
-
-analyzed: case_i_secrecy_sk.spthy
-
-  processing time: 839.17s
-  
-  i_secrecy_sk (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_peerNOsK (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_ownNOsK (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_iEph (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_rEph (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_ownNOsK (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_iEph (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_rEph (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_ownNOsK_iEph (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_ownNOsK_rEph (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_ownNOsK_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_iEph_rEph (all-traces): falsified - found trace (32 steps)
-  i_secrecy_sk_not_Leak_iEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_rEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_iEph (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_rEph (all-traces): falsified - found trace (18 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_iEph_rEph (all-traces): verified (847 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_iEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_rEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_ownNOsK_iEph_rEph (all-traces): falsified - found trace (32 steps)
-  i_secrecy_sk_not_Leak_ownNOsK_iEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_ownNOsK_rEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_iEph_rEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_iEph_rEph (all-traces): verified (847 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_iEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_rEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_peerNOsK_iEph_rEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_ownNOsK_iEph_rEph_IPK (all-traces): verified (7 steps)
-  i_secrecy_sk_not_Leak_all (all-traces): verified (7 steps)
-
-==============================================================================
+lemma	clock	flags	result	steps	sec
+i_secrecy_sk	正確	(なし)	falsified	18	89
+i_secrecy_sk_not_Leak_peerNOsK	正確	(なし)	falsified	18	72
+i_secrecy_sk_not_Leak_ownNOsK	正確	(なし)	falsified	18	90
+i_secrecy_sk_not_Leak_iEph	正確	(なし)	falsified	18	70
+i_secrecy_sk_not_Leak_rEph	正確	(なし)	falsified	18	77
+i_secrecy_sk_not_Leak_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_peerNOsK_ownNOsK	正確	(なし)	falsified	18	74
+i_secrecy_sk_not_Leak_peerNOsK_iEph	正確	(なし)	falsified	18	55
+i_secrecy_sk_not_Leak_peerNOsK_rEph	正確	(なし)	falsified	18	63
+i_secrecy_sk_not_Leak_peerNOsK_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_ownNOsK_iEph	正確	(なし)	falsified	18	69
+i_secrecy_sk_not_Leak_ownNOsK_rEph	正確	(なし)	falsified	18	77
+i_secrecy_sk_not_Leak_ownNOsK_IPK	正確	(なし)	verified	7	22
+i_secrecy_sk_not_Leak_iEph_rEph	正確	(なし)	falsified	32	70
+i_secrecy_sk_not_Leak_iEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_rEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_iEph	正確	(なし)	falsified	18	56
+i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_rEph	正確	(なし)	falsified	18	65
+i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_peerNOsK_iEph_rEph	正確	(なし)	verified	847	292
+i_secrecy_sk_not_Leak_peerNOsK_iEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_peerNOsK_rEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_ownNOsK_iEph_rEph	正確	(なし)	falsified	32	72
+i_secrecy_sk_not_Leak_ownNOsK_iEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_ownNOsK_rEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_iEph_rEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_iEph_rEph	正確	(なし)	verified	847	293
+i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_iEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_peerNOsK_ownNOsK_rEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_peerNOsK_iEph_rEph_IPK	正確	(なし)	verified	7	20
+i_secrecy_sk_not_Leak_ownNOsK_iEph_rEph_IPK	正確	(なし)	verified	7	19
+i_secrecy_sk_not_Leak_all	正確	(なし)	verified	7	20
