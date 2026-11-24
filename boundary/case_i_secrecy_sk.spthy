@@ -38,7 +38,8 @@ rule Expire_NOC:
   [
     !NOsK(nid, fid, NOsK, noc)
   ]--[
-    Expired(nid)
+    NOC_Expired(nid),
+    OnlyOnce(<'expire', nid>)
   ]->[ ]
 
 rule NOsK_Leak:
@@ -93,7 +94,7 @@ rule I_Sigma1:
   ]--[
     I_Sent1(iNid, rNid, destId),
     Eph_I(iNid, iEphpK, ~iEphsK),
-    UseValid(iNid)
+    UseOwn(iNid)
   ]->[
     I_St1(iNid, rNid, ~fid, ~iEphsK, Msg1),
     !I_Eph(iNid, iEphpK, ~iEphsK),
@@ -125,7 +126,7 @@ rule R_Sigma2:
     Running_R_Sigma2(rNid, <iEphpK, rEphpK, ~rRand, th2>),
     Transcript_R(rNid, h(<Msg1, Msg2>)),
     Eph_R(rNid, rEphpK, ~rEphsK),
-    UseValid(rNid)
+    UseOwn(rNid)
   ]->[
     R_St1(rNid, ~fid, ~rEphsK, iEphpK, Msg1, Msg2, s2k, ~resId),
     !R_Eph(rNid, rEphpK, ~rEphsK),
@@ -162,8 +163,8 @@ rule I_Sigma3:
     Transcript_I(iNid, rNid, th3),
     SS_I(iNid, rNid, ~fid, iEphpK, rEphpK, SS),
     SK_I(iNid, rNid, ~fid, iEphpK, rEphpK, sk),
-    UseValid(iNid),
-    UseValid(rNid)
+    UseOwn(iNid),
+    UseValid(iNid, rNid)
   ]->[
     I_St2(iNid, rNid, ~fid, iEphpK, rEphpK, SS, resId),
     Out(Msg3)
@@ -191,7 +192,7 @@ rule R_Finish:
     Commit_R(rNid, iNid, ~fid, iEphpK, rEphpK, sk),
     SS_R(rNid, iNid, ~fid, iEphpK, rEphpK, SS),
     SK_R(rNid, iNid, ~fid, iEphpK, rEphpK, sk),
-    UseValid(iNid)
+    UseValid(rNid, iNid)
   ]->[
     R_ResSt(rNid, iNid, ~fid, iEphpK, rEphpK, SS, ~resId),
     Out(<'StatusReport', 'SUCCESS', 'SECURE_CHANNEL', 'SESSION_ESTABLISHMENT_SUCCESS'>)
@@ -211,8 +212,14 @@ rule I_Finished:
 restriction Equality:
   "All x y #i. Eq(x, y) @ #i ==> x = y"
 
-restriction not_use_after_expiry:
-  "All nid #i #j. Expired(nid) @ #i & UseValid(nid) @ #j ==> #j < #i"
+restriction OnlyOnce:
+  "All x #i #j. OnlyOnce(x) @ #i & OnlyOnce(x) @ #j ==> #i = #j"
+
+restriction own_not_expired:
+  "All n #e #u. NOC_Expired(n) @ #e & UseOwn(n) @ #u ==> #u < #e"
+
+restriction peer_not_expired:
+  "All v n #e #c. NOC_Expired(n) @ #e & UseValid(v, n) @ #c ==> #c < #e"
 
 // 例外なしの秘匿性
 lemma i_secrecy_sk:
