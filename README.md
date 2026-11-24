@@ -25,7 +25,7 @@ Matter-Case/
 │   ├── case_i_secrecy_sk_needs_ipk_and_Eph.spthy
 │   └── case_r_secrecy_sk_needs_ipk_and_Eph.spthy  
 ├── scripts/
-│   └── run.sh                models/case.spthy の全 lemma を実行（時計が正確 / LKGT）
+│   └── run.sh                models/case.spthy と boundary/ の lemma 1本ずつ実行（時計が正確 / LKGT）
 └── results/
     ├── case_out.txt                 models/case.spthy の結果
     ├── case_resumption_out.txt      models/case_resumption.spthy の結果
@@ -107,14 +107,32 @@ tamarin-prover --derivcheck-timeout=60 --prove models/case_resumption.spthy
 
 ### 網羅（`boundary/`）
 
+まとめて実行する場合（lemma を 1 本ずつ別プロセスで回し、結果を `<ファイル名>_out.txt` に書く）：
+
+```sh
+cd scripts
+for f in ../boundary/*.spthy; do MODE=default ./run.sh "$f" 600 900; done
+mv case_*_out.txt ../results/boundary/
+```
+
+`run.sh` は all-traces の lemma をまず制約なしで回し（600 秒まで）、終わらなければ `-D=SEARCH` を付けて反例を探す（900 秒まで）。探索制約（`#ifdef SEARCH`）が入っているのは `case_auth_*` と `case_*_secrecy_sk_needs_ipk_and_Eph` の 4 ファイルだけである。残りの 6 ファイルは制約なしで全 lemma が終わる。
+
+1 本ずつ実行する場合：
+
 ```sh
 cd boundary
-# OR 形・AND 形の lemma（all-traces）：制約なし
+# OR 形・AND 形の lemma（all-traces）：まず制約なし
 tamarin-prover --derivcheck-timeout=60 --prove=i_secrecy_sk_not_Leak_IPK case_i_secrecy_sk.spthy
+
+# 制約なしで反例探索が終わらない lemma：探索制約つき（falsified だけを採用する）
+tamarin-prover --derivcheck-timeout=60 -D=SEARCH --prove=auth_I_R_not_Leak_peerNOsK case_auth_I_R.spthy
 
 # attack_*（exists-trace）：探索制約つき
 tamarin-prover --derivcheck-timeout=60 -D=SEARCH --prove=attack_I_R_by_IPK_peerNOsK case_auth_I_R.spthy
 ```
+
+探索制約（ファブリック 1 つ、Initiator と Responder 各 1 セッション、ノード 2 台、期限切れなし）はトレースを絞るだけなので、その中で見つかった反例・攻撃トレースは元のモデルでも成り立つ。制約つきで出た all-traces の verified は証明にならないので使わない。
+
 
 lemma 名：
 
